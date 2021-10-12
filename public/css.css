@@ -1,0 +1,193 @@
+@font-face {
+  font-family: 'Suisse';
+  src: url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-Regular-WebS.woff2') format('woff2'), /* Super Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-Regular-WebS.woff') format('woff'), /* Pretty Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-Regular-WebS.ttf')  format('truetype'); /* Safari, Android, iOS */
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Suisse';
+  src: url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-RegularItalic-WebS.woff2') format('woff2'), /* Super Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-RegularItalic-WebS.woff') format('woff'), /* Pretty Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-RegularItalic-WebS.ttf')  format('truetype'); /* Safari, Android, iOS */
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Suisse';
+  src: url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-Book-WebS.woff2') format('woff2'), /* Super Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-Book-WebS.woff') format('woff'), /* Pretty Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-Book-WebS.ttf')  format('truetype'); /* Safari, Android, iOS */
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Suisse';
+  src: url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-BookItalic-WebS.woff2') format('woff2'), /* Super Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-BookItalic-WebS.woff') format('woff'), /* Pretty Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-BookItalic-WebS.ttf')  format('truetype'); /* Safari, Android, iOS */
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Suisse';
+  src: url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-Light-WebS.woff2') format('woff2'), /* Super Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-Light-WebS.woff') format('woff'), /* Pretty Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-Light-WebS.ttf')  format('truetype'); /* Safari, Android, iOS */
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Suisse';
+  src: url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-LightItalic-WebS.woff2') format('woff2'), /* Super Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-LightItalic-WebS.woff') format('woff'), /* Pretty Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-LightItalic-WebS.ttf')  format('truetype'); /* Safari, Android, iOS */
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Suisse';
+  src: url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-SemiBold-WebS.woff2') format('woff2'), /* Super Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-SemiBold-WebS.woff') format('woff'), /* Pretty Modern Browsers */
+       url('https://cdn.glitch.com/e4a836c4-56eb-493a-ae1c-c45a16ffaeb9%2FSuisseIntl-SemiBold-WebS.ttf')  format('truetype'); /* Safari, Android, iOS */
+  font-weight: 600;
+  font-style: normal;
+}
+
+
+body {
+  margin: 2rem;
+  font-family: Suisse, sans-serif;
+}
+
+.offcolor {
+  color: #a6a6a6;
+}
+
+input {
+  width: 100%;
+    font-size: 1.6rem;
+    border: 0;
+    background-color: #e0e6e9;
+    padding: 1.5rem;
+    font-weight: bold;
+    color: #333;
+
+}
+
+button, .login {
+  border: none;
+    width: 100%;
+    border-radius: 0;
+    margin-top: 1rem;
+    padding: 1rem;
+    font-size: 1.4rem;
+    color: #fff;
+    background: #169d53;
+    font-weight: 600;
+}
+
+.hidden {
+  display: none;
+}
+
+#countdown {
+  background-color: #00c2cb;
+  height: 9px;
+  margin: -2rem;
+  margin-bottom: 15px;
+
+}
+
+.songAnswer {
+  background-color: #e0e6e9;
+  color: #333;
+  font-size: 1.6rem;
+  font-family: Suisse, sans-serif;
+  text-align: left;
+  margin-top: 0.6rem!important;
+
+}
+
+.songAnswer.corrent {
+  background-color: #169d53!important;
+  color: #fff!important;
+}
+
+.songAnswer.incorrect {
+  background-color: #ef3a5d!important;
+  color: #fff!important;
+}
+
+.songCard {
+  display: flex;
+  height: 80px;
+  margin-bottom: 35px;
+}
+
+.songCard img {
+  height: 80px;
+}
+
+.title, .artist {
+  margin:0;
+  padding:0;
+  font-size: 1rem;
+font-family: Suisse, sans-serif;
+white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title {
+  font-weight: 600;
+}
+
+.text{
+  align-self: center;
+  margin-left: 19px;
+  margin-right: 19px;
+
+      white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.playerName {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #333;
+  font-family: Suisse, sans-serif;
+  margin:  0;
+}
+
+.playerAction {
+  font-size: 1rem;
+  font-family: Suisse, sans-serif;
+  color: #737373;
+  margin: 0;
+
+
+}
+
+.playerScore {
+  font-size: 1.4rem;
+  font-family: Suisse, sans-serif;
+  float: right;
+  position: absolute;
+  top: 0;
+  right: 1.5rem;
+}
+
+.result {
+  padding: 1.5rem;
+  position: relative;
+  background-color: #f0f0ea;
+}

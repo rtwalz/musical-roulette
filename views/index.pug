@@ -1,0 +1,32 @@
+head
+	link(rel="stylesheet", href="/css.css")
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+body
+	
+	#getgamecode.hidden
+		h1
+			span.offcolor music
+			| roulette
+		p The game where a song plays and you guess whose song it is. Everyone enters a game code and plays on their own device.
+		input(type="text", placeholder="Name")
+		button#gamecode Get game code
+	#joingame.hidden
+		h1
+			span.offcolor music
+			| roulette
+		p The game where a song plays and you guess whose song it is. Everyone enters a game code and plays on their own device.
+		p Enter your game code below!
+		input(type="text", placeholder="Name")
+		input(type="number", placeholder="Game code", style="margin-top: 1rem;")
+		button#joingame Join game
+
+	#loginwithspotify
+		h1
+			span.offcolor music
+			| roulette
+		p  The game where a song plays and you guess whose song it is. Everyone enters a game code and plays on their own device. 
+		p Log in with Spotify by clicking the button below. Then you can join or create a game with friends!
+
+		a(href="https://accounts.spotify.com/authorize?response_type=token&client_id=6a07d379738c4e329ab09b8c4f5649d1&scope=user-top-read&redirect_uri=http://localhost:3000/play")
+			button.login#spotifylogin Log in with Spotify

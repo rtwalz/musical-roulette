@@ -1,0 +1,52 @@
+head
+	link(rel="stylesheet", href="/css.css")
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+body
+	#question.hidden
+		#countdown(style="width: 50%;")
+		h1
+			span.offcolor music
+			| roulette
+		p Guess whose song this is!
+		button.songAnswer(_pers="3994") cade
+		button.songAnswer.corrent(_pers="3888") Riley
+		button.songAnswer.incorrect(_pers="3992") Teer
+	#result
+		#countdown(style="width: 50%;")
+		h1
+			| round 1 
+			span.offcolor of 50
+		p This is cade and riley's song, but riley likes it more!
+		.songCard(style="background-color:#949")
+			img.album(src="https://i.scdn.co/image/ab67616d00001e02900f7581977c3d36564415e6")
+			.text
+				p.title Tic Tac thic flap so what it eat that
+				p.artist MEMBA
+		.result
+			p.playerName Cade
+			p.playerAction ❌ Robbie
+			p.playerScore 1728
+	#dash.hidden
+		h1
+			span.offcolor music
+			| roulette
+		p The game where a song plays and you guess whose song it is. Everyone enters a game code and plays on their own device.
+		button#join Join a game
+		button#create Create a game
+
+	#getgamecode.hidden
+		h1
+			span.offcolor music
+			| roulette
+		input(type="text", placeholder="Your name")
+		button#gamecode Get game code
+	#joingame.hidden
+		h1
+			span.offcolor music
+			| roulette
+		p Enter your game code below!
+		input(type="text", placeholder="Your name")
+		input(type="number", placeholder="Game code", style="margin-top: 1rem;")
+		button#joingame Join game
+	script(src="/play.js")
