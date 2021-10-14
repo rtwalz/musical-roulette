@@ -8,6 +8,44 @@ if (!token) {
 	location.href = "/"
 }
 
+var ID = function () {
+  return '_' + Math.random().toString(36).substr(2, 9);
+};
+
+let uniqueId = localStorage.getItem("uuid")
+if (!uniqueId) {
+	uniqueId = ID()
+	localStorage.setItem("uuid", uniqueId)
+}
+
+var socket = io();
+let playerCount = 0
+let gameCode = null
+
+socket.on('playerlist', function(msg) {
+	byId("playerListContainer").innerHTML = ""
+	playerCount = msg.length
+    msg.forEach(function(player){
+    	var item = document.createElement('div');
+	    item.textContent = player;
+	    item.classList.add("player")
+	    
+	    byId("playerListContainer").appendChild(item);
+    })
+    hideEverything()
+    byId("lobby").classList.remove("hidden")
+  });
+
+function hideEverything(){
+	byId("dash").classList.add("hidden")
+	byId("result").classList.add("hidden")
+	byId("lobby").classList.add("hidden")
+	byId("question").classList.add("hidden")
+	byId("joingame").classList.add("hidden")
+	byId("getgamecode").classList.add("hidden")
+}
+
+
 let byId = function(si){
 	return document.getElementById(si)
 }
@@ -21,10 +59,46 @@ byId("create").addEventListener('click', function() {
 	byId("getgamecode").classList.remove("hidden")
 }, false);
 
+function joinGame(gamecode, name, isHost){
+	console.log(gamecode, "gamecode")
+	getSongs(token, function(songs){
+		socket.emit('initial', {
+			name: name,
+			songs: songs,
+			gamecode: gamecode,
+			id: uniqueId
+		});
+		byId("gamecodeDisplay").innerHTML = gamecode
+		if (isHost) byId("startgameHost").classList.remove("hidden")
+		gameCode = gamecode
+	})
+}
 
-getSongs(token, function(songList){
+byId("startgameHost").addEventListener('click', function() { 
+	if (playerCount < 2) return alert("You need at least 2 people to start the game!")
+		socket.emit('start', gameCode);
+}, false);
 
-})
+byId("gamecode").addEventListener('click', function() { 
+	let name = byId("createName").value
+	if (!name) return alert("Enter your name!!!!")
+	fetch('/newgame')
+	  .then(response => response.json())
+	  .then(data => joinGame(data.code, name, true));
+}, false);
+
+byId("joingamebutton").addEventListener('click', function() { 
+	let name = byId("gameCodeName").value
+	let codeNum = byId("gameCodeNumber").value
+	if (!name) return alert("Enter your name!!!!")
+	if (!codeNum) return alert("Enter the game code!!!!")
+	joinGame(codeNum, name)
+}, false);
+
+// getSongs(token, function(songList){
+
+
+// })
 
 // get top 50 songs into standard array [ {name, artist, art, mp3, id} ]
 function getSongs(token, cb){

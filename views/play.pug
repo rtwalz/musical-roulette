@@ -12,7 +12,20 @@ body
 		button.songAnswer(_pers="3994") cade
 		button.songAnswer.corrent(_pers="3888") Riley
 		button.songAnswer.incorrect(_pers="3992") Teer
-	#result
+	#lobby.hidden
+		h1
+			span.offcolor music
+			| roulette
+		h1#gamecodeDisplay 393843
+		p#gamecodeDesc Tell your friends to join at 
+			b roulette.route.run
+			| !
+		#playerListContainer
+
+		#startgameHost Start game
+			
+
+	#result.hidden
 		#countdown(style="width: 50%;")
 		h1
 			| round 1 
@@ -27,7 +40,7 @@ body
 			p.playerName Cade
 			p.playerAction ❌ Robbie
 			p.playerScore 1728
-	#dash.hidden
+	#dash
 		h1
 			span.offcolor music
 			| roulette
@@ -39,14 +52,15 @@ body
 		h1
 			span.offcolor music
 			| roulette
-		input(type="text", placeholder="Your name")
+		input#createName(type="text", placeholder="Your name")
 		button#gamecode Get game code
 	#joingame.hidden
 		h1
 			span.offcolor music
 			| roulette
 		p Enter your game code below!
-		input(type="text", placeholder="Your name")
-		input(type="number", placeholder="Game code", style="margin-top: 1rem;")
-		button#joingame Join game
+		input#gameCodeName(type="text", placeholder="Your name")
+		input#gameCodeNumber(type="number", placeholder="Game code", style="margin-top: 1rem;")
+		button#joingamebutton Join game
+	<script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
 	script(src="/play.js")

@@ -168,6 +168,25 @@ white-space: nowrap;
   margin:  0;
 }
 
+.player {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #333;
+  font-family: Suisse, sans-serif;
+  margin:  0;
+  background-color: #f1c40f;
+  border-radius: 14px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+#playerListContainer {
+  margin-top: 2.5rem;
+  flex-wrap: wrap;
+  display: inline-flex;
+}
+
 .playerAction {
   font-size: 1rem;
   font-family: Suisse, sans-serif;
@@ -175,6 +194,59 @@ white-space: nowrap;
   margin: 0;
 
 
+}
+
+#lobby {
+  position: relative;
+  height:100%;
+}
+
+#startgameHost {
+      background-color: #f1c40f;
+    padding: 1rem;
+    border-radius: 14px;
+    width: calc(100% - 2rem);
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.8rem;
+    position: absolute;
+        box-shadow: rgb(17 12 46 / 15%) 0px 48px 100px 0px;
+    bottom: 0;
+}
+
+
+
+#gamecodeDisplay {
+  font-size: 3rem;
+
+   background: linear-gradient(to right, #000 20%, #f1c40f 40%, #f1c40f 60%, #000 80%);
+  background-size: 200% auto;
+  
+  color: #000;
+  background-clip: text;
+  text-fill-color: transparent;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  
+  animation: shine 3s linear infinite;
+ 
+  margin-bottom: 0;
+}
+
+@-webkit-keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
+}
+
+
+#gamecodeDesc {
+  margin: 0;
 }
 
 .playerScore {
