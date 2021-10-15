@@ -43,6 +43,101 @@ socket.on("error", function(msg){
 	location.reload()
 })
 
+socket.on("result", function(msg){
+	resultStartTime = new Date().getTime()
+	function animationFrame(){
+		let msPassed = new Date().getTime() - resultStartTime
+		let percentageCalc = 1-(msPassed/7000)
+		byId("countdownresult").style.width = percentageCalc*100 + "%"
+		if (percentageCalc <= 1 ) {
+			window.requestAnimationFrame(animationFrame);
+		}
+	}
+	window.requestAnimationFrame(animationFrame);
+	byId("currentRound").innerHTML = msg.round
+	byId("totalRounds").innerHTML = " of " + msg.totalRounds
+
+	byId("resultList").innerHTML = ""
+    msg.scores.forEach(function(player){
+    	var item = document.createElement('div');
+    	item.classList.add('result')
+
+    	byId("songtitle").innerHTML = msg.question.name
+    	byId("songartist").innerHTML = msg.question.artist
+    	byId("songalbum").setAttribute("src", msg.question.art)
+
+    	const colorThief = new ColorThief();
+	    const img = byId("songalbum")
+	    img.crossOrigin = "Anonymous";
+
+
+	    // Make sure image is finished loading
+	    if (img.complete) {
+	      let abc = colorThief.getColor(img);
+	      byId("songcard").style.backgroundColor = "rgb(" + abc.join(",") + ")"
+	      	      byId("countdownresult").style.backgroundColor = "rgb(" + abc.join(",") + ")"
+	      	      if ((abc[0]*0.299 + abc[1]*0.587 + abc[2]*0.114) < 186)
+	      	      {
+	      	      	byId("songtitle").style.color = "#fff"
+	      	      	byId("songartist").style.color = "#fff"
+
+	      	      }  else {
+	      	      	byId("songtitle").style.color = "#333"
+	      	      	byId("songartist").style.color = "#333"
+	      	      }
+
+
+	    } else {
+	      img.addEventListener('load', function() {
+	        let abc = colorThief.getColor(img);
+	        	      	      byId("countdownresult").style.backgroundColor = "rgb(" + abc.join(",") + ")"
+
+		      byId("songcard").style.backgroundColor = "rgb(" + abc.join(",") + ")"
+		      if ((abc[0]*0.299 + abc[1]*0.587 + abc[2]*0.114 < 186))
+	      	      {
+	      	      	byId("songtitle").style.color = "#fff"
+	      	      	byId("songartist").style.color = "#fff"
+
+	      	      }  else {
+	      	      	byId("songtitle").style.color = "#333"
+	      	      	byId("songartist").style.color = "#333"
+	      	      }
+
+	      });
+	    }
+
+
+
+    	var name1 = document.createElement('p');
+    	var name2 = document.createElement('p');
+    	var name3 = document.createElement('p');
+
+    	name1.innerHTML = player.name
+    	name2.innerHTML = "❌"
+    	if (player.correct) name2.innerHTML = "✔️"
+    	name2.innerHTML += " " + player.pick
+    	name3.innerHTML = player.score.toFixed(0)
+
+    	name1.classList.add("playerName")
+    	name2.classList.add("playerAction")
+    	name3.classList.add("playerScore")
+
+
+    	item.appendChild(name1)
+    	item.appendChild(name2)
+    	item.appendChild(name3)
+
+
+
+
+	    
+	    
+	    byId("resultList").appendChild(item);
+    })
+    hideEverything()
+    byId("result").classList.remove("hidden")
+})
+
 socket.on('question', function(msg) {
 
 
@@ -74,11 +169,17 @@ socket.on('question', function(msg) {
 	    item.setAttribute("_player", player.internalId)
 
 	    item.onclick = function(){
-	    	alert("hi")
 	    	if (!ifPickedAnswerAlready){
 	    		ifPickedAnswerAlready = true
 	    		console.log("picked", player.internalId, msg.owner, msg)
-	    		
+	    		item.style.backgroundColor = "#a6a6a6"
+	    		item.style.color = "#fff"
+	    		setTimeout(function(){
+	    			item.style.backgroundColor = "#ef3a5d"
+
+		    		document.querySelector(`[_player="${msg.owner}"]`).style.backgroundColor = "#169d53"
+		    		document.querySelector(`[_player="${msg.owner}"]`).style.color = "#fff"
+	    		}, 150)
 
 	    		socket.emit('answer', {
 					gamecode: msg.gameId,
@@ -171,7 +272,7 @@ function getSongs(token, cb){
 			if (data && data.items && data.items.length) {
 				let songReturner = []
 				data.items.forEach(function(song) {
-					if (song.preview_url && song.artists && song.artists[0] && song.artists[0].name && song.album && song.album.images && song.album.images[1]){
+					if (song.preview_url && song.artists && song.artists[0] && song.artists[0].name && song.album && song.album.images && song.album.images[1] && song.id !== "4wpWZDW50CVGxQUgMmwmGZ"){
 						songReturner.push({
 							name: song.name,
 							artist: song.artists[0].name,

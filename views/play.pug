@@ -19,7 +19,7 @@ body
 			| roulette
 		h1#gamecodeDisplay 393843
 		p#gamecodeDesc Tell your friends to join at 
-			b roulette.route.run
+			b roulette.api.route.run
 			| !
 		#playerListContainer
 
@@ -27,20 +27,22 @@ body
 			
 
 	#result.hidden
-		#countdown(style="width: 50%;")
+		#countdownresult(style="width: 50%;height:")
 		h1
-			| round 1 
-			span.offcolor of 50
-		p This is cade and riley's song, but riley likes it more!
-		.songCard(style="background-color:#949")
-			img.album(src="https://i.scdn.co/image/ab67616d00001e02900f7581977c3d36564415e6")
+			| round 
+			span#currentRound
+			span#totalRounds.offcolor of 50
+		// p This is cade and riley's song, but riley likes it more!
+		.songCard#songcard
+			img.album#songalbum(src="https://i.scdn.co/image/ab67616d00001e02900f7581977c3d36564415e6")
 			.text
-				p.title Tic Tac thic flap so what it eat that
-				p.artist MEMBA
-		.result
-			p.playerName Cade
-			p.playerAction ❌ Robbie
-			p.playerScore 1728
+				p.title#songtitle Tic Tac thic flap so what it eat that
+				p.artist#songartist MEMBA
+		#resultList
+			.result
+				p.playerName Cade
+				p.playerAction ❌ Robbie
+				p.playerScore 1728
 	#dash
 		h1
 			span.offcolor music
@@ -63,5 +65,6 @@ body
 		input#gameCodeName(type="text", placeholder="Your name")
 		input#gameCodeNumber(type="number", placeholder="Game code", style="margin-top: 1rem;")
 		button#joingamebutton Join game
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
 	<script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
 	script(src="/play.js")

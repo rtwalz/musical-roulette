@@ -60,7 +60,10 @@ io.on('connection', (socket) => {
   	// msg: gamecode, id, pick (pick is id of the person they think it is), correct (boolean, whether it's right), ms (milliseconds guessed in)
   	if (!liveGameData[msg.gamecode]) return socket.emit("error", "This game code doesn't exist. ")
   	liveGameData[msg.gamecode].roundAnswers[msg.id] = msg.pick
+  console.log(msg.correct, "msgcorrect")
+  if (!liveGameData[msg.gamecode].scores[msg.id]) liveGameData[msg.gamecode].scores[msg.id] = 0
   	if (msg.correct) liveGameData[msg.gamecode].scores[msg.id] += 500+ (15000-msg.ms)*0.0357
+  		console.log(liveGameData[msg.gamecode].scores, "scores!!!")
 
   })
 //todo scores won't get added because probably msg.correct isn't sending properly
@@ -70,7 +73,7 @@ io.on('connection', (socket) => {
   	io.to(gameId).emit('question', {... selectedQ, room: gameId, gameId, players: liveGameData[gameId].players, ms: 14500})
   	setTimeout(function(){
   		// {scores: [{name: Riley, score: 5000, correct: false, pick: Cade} ... ]}
-  		let scoreReturn = {scores: [], round: liveGameData[gameId].totalRoundCount - liveGameData[gameId].songQuestions.length, totalRounds: liveGameData[gameId].totalRoundCount}
+  		let scoreReturn = {question: selectedQ, scores: [], round: liveGameData[gameId].totalRoundCount - liveGameData[gameId].songQuestions.length, totalRounds: liveGameData[gameId].totalRoundCount}
   		liveGameData[gameId].players.forEach(function(player){
 
   			scoreReturn.scores.push({
@@ -79,6 +82,10 @@ io.on('connection', (socket) => {
   				score: liveGameData[gameId].scores[player.internalId] || 0,
   				correct: selectedQ.owner == liveGameData[gameId].roundAnswers[player.internalId]
   			})
+
+  			scoreReturn.scores.sort(function(a, b) {
+			    return b.score - a.score;
+			});
   		})
   		io.to(gameId).emit('result', scoreReturn)
   		setTimeout(function(){
@@ -97,7 +104,7 @@ io.on('connection', (socket) => {
   	liveGameData[msg].players.forEach(function(player){
   		allSongs = allSongs.concat(player.songbank.map(obj=> ({ ...obj, owner: player.internalId })))
   	})
-  	liveGameData[msg].songQuestions = shuffle(allSongs).slice(0,50)
+  	liveGameData[msg].songQuestions = shuffle(allSongs).slice(0,20)
   	liveGameData[msg].roundAnswers = {}
   	liveGameData[msg].totalRoundCount = liveGameData[msg].songQuestions.length
   	sendQuestion(msg)

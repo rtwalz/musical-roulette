@@ -98,7 +98,7 @@ button, .login {
   display: none;
 }
 
-#countdown {
+#countdown, #countdownresult {
   background-color: #00c2cb;
   height: 9px;
   margin: -2rem;
@@ -128,12 +128,14 @@ button, .login {
 
 .songCard {
   display: flex;
+  transition: background-color 100ms linear;
   height: 80px;
   margin-bottom: 35px;
 }
 
 .songCard img {
   height: 80px;
+  width: 80px;
 }
 
 .title, .artist {
@@ -260,6 +262,7 @@ white-space: nowrap;
 
 .result {
   padding: 1.5rem;
+  margin-bottom: 0.6rem;
   position: relative;
   background-color: #f0f0ea;
 }
