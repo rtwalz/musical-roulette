@@ -272,7 +272,7 @@ function getSongs(token, cb){
 			if (data && data.items && data.items.length) {
 				let songReturner = []
 				data.items.forEach(function(song) {
-					if (song.preview_url && song.artists && song.artists[0] && song.artists[0].name && song.album && song.album.images && song.album.images[1] && song.id !== "4wpWZDW50CVGxQUgMmwmGZ"){
+					if (song.preview_url && song.artists && song.artists[0] && song.artists[0].name && song.album && song.album.images && song.album.images[1] && song.id !== "4wpWZDW50CVGxQUgMmwmG"){
 						songReturner.push({
 							name: song.name,
 							artist: song.artists[0].name,
