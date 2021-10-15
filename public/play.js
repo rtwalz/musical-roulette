@@ -21,6 +21,8 @@ if (!uniqueId) {
 var socket = io();
 let playerCount = 0
 let gameCode = null
+let isHostG = false
+let questionStartTime = null
 
 socket.on('playerlist', function(msg) {
 	byId("playerListContainer").innerHTML = ""
@@ -34,6 +36,64 @@ socket.on('playerlist', function(msg) {
     })
     hideEverything()
     byId("lobby").classList.remove("hidden")
+  });
+
+socket.on("error", function(msg){
+	alert(msg)
+	location.reload()
+})
+
+socket.on('question', function(msg) {
+
+
+
+	questionStartTime = new Date().getTime()
+	function animationFrame(){
+		let msPassed = new Date().getTime() - questionStartTime
+		let percentageCalc = 1-(msPassed/msg.ms)
+		byId("countdown").style.width = percentageCalc*100 + "%"
+		if (percentageCalc <= 1 ) {
+			window.requestAnimationFrame(animationFrame);
+		}
+	}
+	window.requestAnimationFrame(animationFrame);
+	if (isHostG) {
+		let blankAudio = new Audio(msg.mp3)
+		blankAudio.play()
+		setTimeout(function(){
+			blankAudio.pause()
+		}, 21000)
+	}
+	byId("questionBank").innerHTML = ""
+	playerCount = msg.players.length
+	let ifPickedAnswerAlready = false
+    msg.players.forEach(function(player){
+    	var item = document.createElement('button');
+	    item.textContent = player.name;
+	    item.classList.add("songAnswer")
+	    item.setAttribute("_player", player.internalId)
+
+	    item.onclick = function(){
+	    	alert("hi")
+	    	if (!ifPickedAnswerAlready){
+	    		ifPickedAnswerAlready = true
+	    		console.log("picked", player.internalId, msg.owner, msg)
+	    		
+
+	    		socket.emit('answer', {
+					gamecode: msg.gameId,
+					pick: player.internalId,
+					id: uniqueId,
+					correct: player.internalId == msg.owner,
+					ms: new Date().getTime() - questionStartTime
+				});
+	    	}
+	    }
+	    
+	    byId("questionBank").appendChild(item);
+    })
+    hideEverything()
+    byId("question").classList.remove("hidden")
   });
 
 function hideEverything(){
@@ -60,7 +120,7 @@ byId("create").addEventListener('click', function() {
 }, false);
 
 function joinGame(gamecode, name, isHost){
-	console.log(gamecode, "gamecode")
+	isHostG = isHost
 	getSongs(token, function(songs){
 		socket.emit('initial', {
 			name: name,

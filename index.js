@@ -26,7 +26,8 @@ app.get("/newgame", (req,res)=>{
 		songQuestions: [],
 		inProgress: false,
 		currentRound: 0,
-		roundAnswers: {}
+		roundAnswers: {},
+		scores: {}
 	}
 
 	res.json({code: newGameId})
@@ -40,7 +41,7 @@ io.on('connection', (socket) => {
 
   socket.on('initial', (msg) => {
   	console.log(msg.gamecode, "gamecdoe", liveGameData)
-    //msg: code, name, songs, id
+    //msg: gamecode, name, songs, id
     if (!liveGameData[msg.gamecode]) return socket.emit("error", "This game code doesn't exist. ")
     else if (liveGameData[msg.gamecode].inProgress) return socket.emit("error", "This game is already in-progress, so you can't join")
     socket.join(msg.gamecode)
@@ -49,22 +50,57 @@ io.on('connection', (socket) => {
 		songbank: msg.songs,
 		socketId: socket.id,
 		internalId: msg.id,
-		points: 0,
 		disconnected: false
 	})
 	io.to(msg.gamecode).emit('playerlist', liveGameData[msg.gamecode].players.map(x=>x.name))
 
   });
 
+  socket.on("answer", (msg) => {
+  	// msg: gamecode, id, pick (pick is id of the person they think it is), correct (boolean, whether it's right), ms (milliseconds guessed in)
+  	if (!liveGameData[msg.gamecode]) return socket.emit("error", "This game code doesn't exist. ")
+  	liveGameData[msg.gamecode].roundAnswers[msg.id] = msg.pick
+  	if (msg.correct) liveGameData[msg.gamecode].scores[msg.id] += 500+ (15000-msg.ms)*0.0357
+
+  })
+//todo scores won't get added because probably msg.correct isn't sending properly
+  function sendQuestion(gameId){
+  	liveGameData[gameId].roundAnswers = {}
+  	let selectedQ = liveGameData[gameId].songQuestions.shift()
+  	io.to(gameId).emit('question', {... selectedQ, room: gameId, gameId, players: liveGameData[gameId].players, ms: 14500})
+  	setTimeout(function(){
+  		// {scores: [{name: Riley, score: 5000, correct: false, pick: Cade} ... ]}
+  		let scoreReturn = {scores: [], round: liveGameData[gameId].totalRoundCount - liveGameData[gameId].songQuestions.length, totalRounds: liveGameData[gameId].totalRoundCount}
+  		liveGameData[gameId].players.forEach(function(player){
+
+  			scoreReturn.scores.push({
+  				name: player.name,
+  				pick: liveGameData[gameId].players.find(element => element.internalId == liveGameData[gameId].roundAnswers[player.internalId])?.name || "Too slow",
+  				score: liveGameData[gameId].scores[player.internalId] || 0,
+  				correct: selectedQ.owner == liveGameData[gameId].roundAnswers[player.internalId]
+  			})
+  		})
+  		io.to(gameId).emit('result', scoreReturn)
+  		setTimeout(function(){
+  			if (liveGameData[gameId].songQuestions.length){
+  				sendQuestion(gameId)
+  			}
+  		}, 7000)
+  	}, 15000)
+  }
+
   socket.on('start', (msg)=> {
   	if (!liveGameData[msg]) return socket.emit("error", "this game code doesn't exist")
+  	if (liveGameData[msg].inProgress) return // game already in progress
+  	liveGameData[msg].inProgress = true
   	let allSongs = []
   	liveGameData[msg].players.forEach(function(player){
-  		allSongs = allSongs.concat(player.songbank.map(obj=> ({ ...obj, owner: internalId })))
+  		allSongs = allSongs.concat(player.songbank.map(obj=> ({ ...obj, owner: player.internalId })))
   	})
   	liveGameData[msg].songQuestions = shuffle(allSongs).slice(0,50)
   	liveGameData[msg].roundAnswers = {}
-  	io.to(msg.gamecode).emit('question', {... liveGameData[msg].songQuestions[0], gameId: msg, seconds: 15})
+  	liveGameData[msg].totalRoundCount = liveGameData[msg].songQuestions.length
+  	sendQuestion(msg)
   })
 
 });
