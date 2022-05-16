@@ -52,7 +52,7 @@ socket.on("result", function(msg){
 		if (percentageCalc <= 1 ) {
 			window.requestAnimationFrame(animationFrame);
 		}
-	}
+	}a
 	window.requestAnimationFrame(animationFrame);
 	byId("currentRound").innerHTML = msg.round
 	byId("totalRounds").innerHTML = " of " + msg.totalRounds
@@ -174,8 +174,13 @@ socket.on("result", function(msg){
 socket.on('finish', function(msg){
 	hideEverything()
 	byId("alldone").classList.remove("hidden")
-	byId("songcard").classList.add("hidden")
+	byId("songcard").style.display = "none!important"
 	byId("result").classList.remove("hidden")
+	var divsToHide = document.getElementsByClassName("playerAction"); //divsToHide is an array
+    for(var i = 0; i < divsToHide.length; i++){
+        divsToHide[i].style.visibility = "hidden"; // or
+        divsToHide[i].style.display = "none"; // depending on what you're doing
+    }
 })
 
 socket.on('question', function(msg) {
