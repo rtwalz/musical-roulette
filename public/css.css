@@ -67,6 +67,11 @@ body {
   font-family: Suisse, sans-serif;
 }
 
+button {
+  font-family: Suisse, sans-serif;
+
+ }
+
 .offcolor {
   color: #a6a6a6;
 }
@@ -266,3 +271,32 @@ white-space: nowrap;
   position: relative;
   background-color: #f0f0ea;
 }
+
+#overlay {
+  position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% - 4rem);
+    height: calc(100% - 4rem);
+    background-color: teal;
+    z-index: 100;
+    padding: 2rem;
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 1, 1);
+    opacity: 0;
+    pointer-events: none;
+}
+
+#overlay h1 {
+  font-weight: 300;
+}
+
+#overlay h2 {
+margin-top: 4rem;
+    margin-bottom: 0;
+    font-size: 2rem;
+}
+
+#overlay h4 {
+margin-top: 0;
+    font-weight: 400;
+    font-size: 1.25rem;}

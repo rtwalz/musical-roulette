@@ -70,7 +70,7 @@ io.on('connection', (socket) => {
   function sendQuestion(gameId){
   	liveGameData[gameId].roundAnswers = {}
   	let selectedQ = liveGameData[gameId].songQuestions.shift()
-  	io.to(gameId).emit('question', {... selectedQ, room: gameId, gameId, players: liveGameData[gameId].players, ms: 14500})
+  	io.to(gameId).emit('question', {... selectedQ, room: gameId, gameId, ownerName: selectedQ.ownerName, ownerIndex: selectedQ.index, players: liveGameData[gameId].players, ms: 14500})
   	setTimeout(function(){
   		// {scores: [{name: Riley, score: 5000, correct: false, pick: Cade} ... ]}
   		let scoreReturn = {question: selectedQ, scores: [], round: liveGameData[gameId].totalRoundCount - liveGameData[gameId].songQuestions.length, totalRounds: liveGameData[gameId].totalRoundCount}
@@ -102,7 +102,7 @@ io.on('connection', (socket) => {
   	liveGameData[msg].inProgress = true
   	let allSongs = []
   	liveGameData[msg].players.forEach(function(player){
-  		allSongs = allSongs.concat(player.songbank.map(obj=> ({ ...obj, owner: player.internalId })))
+  		allSongs = allSongs.concat(player.songbank.map(obj=> ({ ...obj, owner: player.internalId, ownerName: player.name })))
   	})
   	liveGameData[msg].songQuestions = shuffle(allSongs).slice(0,20)
   	liveGameData[msg].roundAnswers = {}
