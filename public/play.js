@@ -47,7 +47,7 @@ socket.on("result", function(msg){
 	resultStartTime = new Date().getTime()
 	function animationFrame(){
 		let msPassed = new Date().getTime() - resultStartTime
-		let percentageCalc = 1-(msPassed/7000)
+		let percentageCalc = 1-(msPassed/14000)
 		byId("countdownresult").style.width = percentageCalc*100 + "%"
 		if (percentageCalc <= 1 ) {
 			window.requestAnimationFrame(animationFrame);
@@ -114,6 +114,7 @@ socket.on("result", function(msg){
 
       });
     }
+
     msg.scores.forEach(function(player){
     	var item = document.createElement('div');
     	item.classList.add('result')
@@ -163,9 +164,18 @@ socket.on("result", function(msg){
     setTimeout(function(){
 	    byId("result").classList.remove("hidden")
     byId("overlay").style.opacity = 0
+    byId("doneSongs").innerHTML = byId("doneSongs").innerHTML + byId("songcard").outerHTML
 
 
-    }, 3000)
+
+    }, 5000)
+})
+
+socket.on('finish', function(msg){
+	hideEverything()
+	byId("alldone").classList.remove("hidden")
+	byId("songcard").classList.add("hidden")
+	byId("result").classList.remove("hidden")
 })
 
 socket.on('question', function(msg) {
@@ -187,16 +197,16 @@ socket.on('question', function(msg) {
 		blankAudio.play()
 		setTimeout(function(){
 			var fadeAudio = setInterval(function () {
-				console.log(blankAudio, blankAudio.volume)
-				if (blankAudio.volume <= 0) {
+				if (blankAudio.volume <= 0.001) {
 		            clearInterval(fadeAudio);
+
 		        }
 	        
 	            blankAudio.volume -= 0.1;
 		       
 		        
 		    }, 200);
-		}, 19000)
+		}, 27000)
 	}
 	byId("questionBank").innerHTML = ""
 	playerCount = msg.players.length

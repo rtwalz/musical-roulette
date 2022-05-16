@@ -91,8 +91,10 @@ io.on('connection', (socket) => {
   		setTimeout(function(){
   			if (liveGameData[gameId].songQuestions.length){
   				sendQuestion(gameId)
-  			}
-  		}, 7000)
+  			} else {
+          io.to(gameId).emit("finish")
+        }
+  		}, 14000)
   	}, 15000)
   }
 

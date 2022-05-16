@@ -138,6 +138,10 @@ button, .login {
   margin-bottom: 35px;
 }
 
+#doneSongs .songCard {
+  margin-bottom:7px!important;
+}
+
 .songCard img {
   height: 80px;
   width: 80px;
