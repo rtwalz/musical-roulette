@@ -19,6 +19,9 @@ if (!uniqueId) {
 }
 
 var socket = io();
+setInterval(function(){
+	alert(socket.connected)
+}, 5000)
 let playerCount = 0
 let gameCode = null
 let isHostG = false

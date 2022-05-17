@@ -38,9 +38,10 @@ app.get('/play', (req, res) => {
 })
 
 io.on('connection', (socket) => {
+  console.log("new connection", socket.id)
 
   socket.on('initial', (msg) => {
-  	console.log(msg.gamecode, "gamecdoe", liveGameData)
+  	console.log("sent initial", msg.name, msg.gamecode)
     //msg: gamecode, name, songs, id
     if (!liveGameData[msg.gamecode]) return socket.emit("error", "This game code doesn't exist. ")
     else if (liveGameData[msg.gamecode].inProgress) return socket.emit("error", "This game is already in-progress, so you can't join")
@@ -60,10 +61,10 @@ io.on('connection', (socket) => {
   	// msg: gamecode, id, pick (pick is id of the person they think it is), correct (boolean, whether it's right), ms (milliseconds guessed in)
   	if (!liveGameData[msg.gamecode]) return socket.emit("error", "This game code doesn't exist. ")
   	liveGameData[msg.gamecode].roundAnswers[msg.id] = msg.pick
-  console.log(msg.correct, "msgcorrect")
+  // console.log(msg.correct, "msgcorrect")
   if (!liveGameData[msg.gamecode].scores[msg.id]) liveGameData[msg.gamecode].scores[msg.id] = 0
   	if (msg.correct) liveGameData[msg.gamecode].scores[msg.id] += 500+ (15000-msg.ms)*0.0357
-  		console.log(liveGameData[msg.gamecode].scores, "scores!!!")
+  		// console.log(liveGameData[msg.gamecode].scores, "scores!!!")
 
   })
 //todo scores won't get added because probably msg.correct isn't sending properly
