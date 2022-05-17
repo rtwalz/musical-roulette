@@ -43,10 +43,12 @@ io.on('connection', (socket) => {
   socket.on('confirmation', (msg) => {
     // msg. uuid code
     //gus
+    if (msg.code && msg.uuid && liveGameData[msg.code]){
     socket.join(msg.code)
-    let selectedPlayer = liveGameData.players.find(function(ji){return ji.internalId == msg.uuid})
+    let selectedPlayer = liveGameData[msg.code].players.find(function(ji){return ji.internalId == msg.uuid})
     selectedPlayer.socketId = socket.id
     console.log(selectedPlayer.name, "reconnected!")
+  } else console.log("noconnect")
   })
 
   socket.on('initial', (msg) => {
