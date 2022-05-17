@@ -112,7 +112,6 @@ io.on('connection', (socket) => {
       if (!allSongObjects[song.id]) allSongObjects[song.id] = [song]
       else allSongObjects[song.id].push(song)
     })
-    console.log("ALLSONG", allSongObjects)
 
     allSongs = []
     Object.values(allSongObjects).forEach(function(songArrays){
@@ -126,11 +125,9 @@ io.on('connection', (socket) => {
           }
         })
         allSongs.push(songArrays[0])
-        console.log(songArrays[0])
       }
     })
 
-    console.log(allSongs)
 
   	liveGameData[msg].songQuestions = shuffle(allSongs).slice(0,20)
   	liveGameData[msg].roundAnswers = {}
@@ -141,22 +138,11 @@ io.on('connection', (socket) => {
 });
 
 function shuffle(array) {
-  let currentIndex = array.length,  randomIndex;
-
-  // While there remain elements to shuffle...
-  while (currentIndex != 0) {
-
-    // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-
-    // And swap it with the current element.
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex], array[currentIndex]];
-  }
-
-  return array;
+  return array.map(value => ({ value, sort: Math.random() }))
+  .sort((a, b) => a.sort - b.sort)
+  .map(({ value }) => value)
 }
+
 
 server.listen(process.env.PORT || 3000., () => {
   console.log('listening on *:3000');
