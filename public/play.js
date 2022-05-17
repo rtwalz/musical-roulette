@@ -52,7 +52,7 @@ socket.on("result", function(msg){
 		if (percentageCalc <= 1 ) {
 			window.requestAnimationFrame(animationFrame);
 		}
-	}a
+	}
 	window.requestAnimationFrame(animationFrame);
 	byId("currentRound").innerHTML = msg.round
 	byId("totalRounds").innerHTML = " of " + msg.totalRounds
@@ -124,6 +124,13 @@ socket.on("result", function(msg){
 
     	byId("what").innerHTML = msg.question.name
     	byId("whose").innerHTML = `${msg.question.ownerName}'s #${msg.question.index+1}`
+    	if (msg.question.otherIndexes){
+    		msg.question.otherIndexes.forEach(function(otherIndex){
+	    	byId("whose").innerHTML += `<br><span class="also">Also ${otherIndex[1]}'s #${otherIndex[0]+1}</span>`
+
+    		})
+
+    	}
 
     	byId("by").innerHTML = msg.question.artist
 

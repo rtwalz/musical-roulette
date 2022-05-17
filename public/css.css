@@ -207,6 +207,11 @@ white-space: nowrap;
 
 }
 
+span.also {
+    font-style: italic;
+    font-size: 1.2rem;
+}
+
 #lobby {
   position: relative;
   height:100%;

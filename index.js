@@ -106,6 +106,32 @@ io.on('connection', (socket) => {
   	liveGameData[msg].players.forEach(function(player){
   		allSongs = allSongs.concat(player.songbank.map(obj=> ({ ...obj, owner: player.internalId, ownerName: player.name })))
   	})
+
+    let allSongObjects = {}
+    allSongs.forEach(function(song){
+      if (!allSongObjects[song.id]) allSongObjects[song.id] = [song]
+      else allSongObjects[song.id].push(song)
+    })
+    console.log("ALLSONG", allSongObjects)
+
+    allSongs = []
+    Object.values(allSongObjects).forEach(function(songArrays){
+      if (songArrays.length == 1) allSongs.push(songArrays[0])
+      else {
+        songArrays.sort((a, b) => a.index - b.index);
+        songArrays[0].otherIndexes = []
+        songArrays.forEach(function(songg, indeo){
+          if (indeo !== 0){
+            songArrays[0].otherIndexes.push([songg.index, songg.ownerName])
+          }
+        })
+        allSongs.push(songArrays[0])
+        console.log(songArrays[0])
+      }
+    })
+
+    console.log(allSongs)
+
   	liveGameData[msg].songQuestions = shuffle(allSongs).slice(0,20)
   	liveGameData[msg].roundAnswers = {}
   	liveGameData[msg].totalRoundCount = liveGameData[msg].songQuestions.length
