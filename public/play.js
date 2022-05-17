@@ -20,7 +20,9 @@ if (!uniqueId) {
 
 var socket = io();
 setInterval(function(){
-	alert(socket.connected)
+	// alert(socket.connected)
+	byId("currentRound").innerHTML = socket.connected
+	document.querySelector("#question > h1").innerHTML = socket.connected
 }, 5000)
 let playerCount = 0
 let gameCode = null
