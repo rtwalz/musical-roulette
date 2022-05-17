@@ -331,7 +331,7 @@ function getSongs(token, cb){
 	request.onload = function() {
 		if (this.status >= 200 && this.status < 400) {
 			var data = JSON.parse(this.response);
-			if (data && data.items && data.items.length) {
+			if (data) {
 				let songReturner = []
 				data.items.forEach(function(song, index) {
 					if (song.preview_url && song.artists && song.artists[0] && song.artists[0].name && song.album && song.album.images && song.album.images[1] && song.id !== "4wpWZDW50CVGxQUgMmwmG"){
