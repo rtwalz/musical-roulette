@@ -40,6 +40,15 @@ app.get('/play', (req, res) => {
 io.on('connection', (socket) => {
   console.log("new connection", socket.id)
 
+  socket.on('confirmation', (msg) => {
+    // msg. uuid code
+    //gus
+    socket.join(msg.code)
+    let selectedPlayer = liveGameData.players.find(function(ji){return ji.internalId == msg.uuid})
+    selectedPlayer.socketId = socket.id
+    console.log(selectedPlayer.name, "reconnected!")
+  })
+
   socket.on('initial', (msg) => {
   	console.log("sent initial", msg.name, msg.gamecode)
     //msg: gamecode, name, songs, id

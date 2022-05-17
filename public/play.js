@@ -29,6 +29,25 @@ let gameCode = null
 let isHostG = false
 let questionStartTime = null
 
+if (localStorage.getItem("currentGame") && confirm("Do you want to rejoin the game #" + localStorage.getItem("currentGame"))){
+
+	socket.emit("confirmation", {
+	  	uuid: uniqueId,
+	  	code: localStorage.getItem("currentGame"),
+	  })
+
+	if (localStorage.getItem("isHost")) isHostG = true
+
+
+}
+
+socket.on("connect", () => {
+  socket.emit("confirmation", {
+  	uuid: uniqueId,
+  	code: localStorage.getItem("currentGame")
+  })
+});
+
 socket.on('playerlist', function(msg) {
 	byId("playerListContainer").innerHTML = ""
 	playerCount = msg.length
@@ -186,6 +205,9 @@ socket.on("result", function(msg){
 socket.on('finish', function(msg){
 	hideEverything()
 	byId("alldone").classList.remove("hidden")
+		localStorage.setItem("currentGame", gamecode)
+		localStorage.setItem("isHost", null)
+
 	byId("songcard").style.display = "none!important"
 	byId("result").classList.remove("hidden")
 	var divsToHide = document.getElementsByClassName("playerAction"); //divsToHide is an array
@@ -296,6 +318,9 @@ function joinGame(gamecode, name, isHost){
 			gamecode: gamecode,
 			id: uniqueId
 		});
+		localStorage.setItem("currentGame", gamecode)
+		localStorage.setItem("isHost", isHost)
+
 		byId("gamecodeDisplay").innerHTML = gamecode
 		if (isHost) byId("startgameHost").classList.remove("hidden")
 		gameCode = gamecode
