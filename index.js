@@ -28,7 +28,7 @@ app.get("/newgame", (req,res)=>{
 		currentRound: 0,
 		roundAnswers: {},
 		scores: {},
-    playlistShare: {}
+    // playlistShare: {}
 	}
 
 	res.json({code: newGameId})
@@ -141,8 +141,8 @@ io.on('connection', (socket) => {
       }
     })
 
-    liveGameData[msg].playlistShare.users = liveGameData[msg].players.map(function(p){return p.name})
-    liveGameData[msg].playlistShare.songs = liveGameData[msg].players.map(function(p){return p.name})
+    //liveGameData[msg].playlistShare.users = liveGameData[msg].players.map(function(p){return p.name})
+    //liveGameData[msg].playlistShare.songs = liveGameData[msg].players.map(function(p){return p.name})
   	liveGameData[msg].songQuestions = shuffle(allSongs).slice(0,20)
   	liveGameData[msg].roundAnswers = {}
   	liveGameData[msg].totalRoundCount = liveGameData[msg].songQuestions.length
