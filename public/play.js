@@ -19,11 +19,7 @@ if (!uniqueId) {
 }
 
 var socket = io();
-setInterval(function(){
-	// alert(socket.connected)
-	byId("currentRound").innerHTML = socket.connected
-	document.querySelector("#question > h1").innerHTML = socket.connected
-}, 5000)
+
 let playerCount = 0
 let gameCode = null
 let isHostG = false
@@ -205,8 +201,14 @@ socket.on("result", function(msg){
 socket.on('finish', function(msg){
 	hideEverything()
 	byId("alldone").classList.remove("hidden")
-		localStorage.setItem("currentGame", gamecode)
-		localStorage.setItem("isHost", null)
+	localStorage.setItem("currentGame", gamecode)
+	localStorage.setItem("isHost", null)
+
+	localStorage.setItem("playlist", JSON.stringify({
+		
+	}))
+
+	byId("playlistButton").setAttribute("href", byId("playlistButton").getAttribute("href")+encodeURIComponent(JSON.stringify({players:[], })))	
 
 	byId("songcard").style.display = "none!important"
 	byId("result").classList.remove("hidden")

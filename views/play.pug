@@ -75,7 +75,10 @@ body(style="max-width:400px;")
 		h4#by RJ Reinhold
 	#alldone.hidden
 		a(href="/")
-			button(href="/", style="margin-bottom:15px;") Play again
+			button(href="/", style="margin-bottom:5px;") Play again
+		a#playlistButton(href="https://accounts.spotify.com/authorize?response_type=token&client_id=6a07d379738c4e329ab09b8c4f5649d1&scope=playlist-modify-public,playlist-modify-private&redirect_uri=https://musicalroulette.com/playlist&state=")
+			button(style="margin-bottom:15px;font-size:1.1rem;") Make playlist from game songs
+
 		#doneSongs
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
 	<script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
