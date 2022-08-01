@@ -358,7 +358,7 @@ byId("joingamebutton").addEventListener('click', function() {
 // get top 50 songs into standard array [ {name, artist, art, mp3, id} ]
 function getSongs(token, cb){
 	var request = new XMLHttpRequest()
-	request.open("GET", "https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50", true)
+	request.open("GET", "https://api.spotify.com/v1/me/top/tracks?time_range=medium_term&limit=50", true)
 	request.setRequestHeader("Authorization", "Bearer " + token);
 	request.onload = function() {
 		if (this.status >= 200 && this.status < 400) {
