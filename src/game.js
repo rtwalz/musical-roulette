@@ -11,6 +11,10 @@ export function createRoom(code, host, now) {
   };
 }
 
+export function isRoomExpired(room, now) {
+  return (room.phase === 'lobby' || room.phase === 'finished') && now >= room.expires;
+}
+
 export function joinRoom(room, player) {
   if (room.phase !== 'lobby') return 'This game has already started.';
   if (room.players.length >= MAX_PLAYERS) return 'This game is full.';
@@ -59,6 +63,7 @@ function start(room, now, random) {
   for (const player of room.players) delete player.songs;
   room.round = 0;
   room.phase = 'question';
+  room.expires = null;
   room.deadline = now + GUESS_MS;
 }
 

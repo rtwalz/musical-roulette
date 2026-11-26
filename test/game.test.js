@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GUESS_MS, RESULTS_MS, createRoom, joinRoom, leaveRoom, act, advance, snapshot } from '../src/game.js';
+import { GUESS_MS, RESULTS_MS, ROOM_TTL, createRoom, isRoomExpired, joinRoom, leaveRoom, act, advance, snapshot } from '../src/game.js';
 
 const sample = { uri: 'spotify:track:0', title: 'Track', artist: 'Artist', preview: 'https://example.com/clip', index: 4 };
 const player = (id, songs) => ({ id, name: id, token: `private-${id}`, songs, score: 0 });
@@ -41,6 +41,25 @@ test('a track is still guessable after its owner leaves an ongoing round', () =>
   assert.equal(act(room, 'guest', { type: 'answer', round: 1, pick: 'host' }, 1), undefined);
   advance(room, GUESS_MS);
   assert.equal(snapshot(room, 'guest', GUESS_MS).scores[0].pick, 'host');
+});
+
+test('a game started just before lobby expiry remains playable and receives a new finished TTL', () => {
+  const room = createRoom('123456', player('host', [sample]), 0);
+  const lobbyExpiry = room.expires;
+  assert.equal(isRoomExpired(room, lobbyExpiry), true);
+  joinRoom(room, player('guest', []));
+  act(room, 'host', { type: 'start' }, lobbyExpiry - 1);
+  assert.equal(room.expires, null);
+  assert.equal(isRoomExpired(room, lobbyExpiry + 1), false);
+  assert.equal(isRoomExpired({ ...room, expires: lobbyExpiry }, lobbyExpiry + 1), false);
+  assert.equal(act(room, 'guest', { type: 'answer', round: 1, pick: 'host' }, lobbyExpiry + 1), undefined);
+  advance(room, lobbyExpiry + GUESS_MS);
+  assert.equal(isRoomExpired(room, lobbyExpiry + GUESS_MS), false);
+  const finish = lobbyExpiry + GUESS_MS + RESULTS_MS;
+  advance(room, finish);
+  assert.equal(room.expires, finish + ROOM_TTL);
+  assert.equal(isRoomExpired(room, room.expires - 1), false);
+  assert.equal(isRoomExpired(room, room.expires), true);
 });
 
 test('questions are redacted, server scores once, and snapshots restore each phase', () => {

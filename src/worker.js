@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { createRoom, joinRoom, leaveRoom, act, advance, snapshot } from './game.js';
+import { createRoom, isRoomExpired, joinRoom, leaveRoom, act, advance, snapshot } from './game.js';
 import { loadSongs } from './spotify.js';
 import { readRoomBody } from './request.js';
 
@@ -64,7 +64,7 @@ export class Room extends DurableObject {
   }
 
   canJoin() {
-    return this.game?.phase === 'lobby' && Date.now() < this.game.expires;
+    return this.game?.phase === 'lobby' && !isRoomExpired(this.game, Date.now());
   }
 
   async enter(code, player, creating) {
@@ -111,7 +111,7 @@ export class Room extends DurableObject {
   }
 
   async webSocketMessage(socket, raw) {
-    if (!this.game || Date.now() >= this.game.expires) {
+    if (!this.game || isRoomExpired(this.game, Date.now())) {
       socket.close(1008, 'Room expired');
       return;
     }
@@ -171,7 +171,7 @@ export class Room extends DurableObject {
   async alarm() {
     if (!this.game) return;
     const now = Date.now();
-    if (this.game.deadline === null && now >= this.game.expires) {
+    if (isRoomExpired(this.game, now)) {
       this.game = undefined;
       for (const socket of this.ctx.getWebSockets()) {
         socket.close(1008, 'Room expired');
