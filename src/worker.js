@@ -1,6 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { createRoom, joinRoom, act, advance, snapshot } from './game.js';
 import { loadSongs } from './spotify.js';
+import { readRoomBody } from './request.js';
 
 function problem(error, status) {
   return Response.json({ error }, { status });
@@ -24,10 +25,11 @@ export default {
     const creating = url.pathname === '/api/rooms';
     if (request.method === 'POST' && (creating || (match && !match[2]))) {
       if (request.headers.get('Origin') !== url.origin) return problem('Invalid origin.', 403);
-      if (Number(request.headers.get('Content-Length')) > 1024) return problem('Request too large.', 413);
       let name;
       try {
-        name = (await request.json())?.name?.trim();
+        const body = await readRoomBody(request);
+        if (body === null) return problem('Request too large.', 413);
+        name = JSON.parse(body)?.name?.trim();
       } catch {
         return problem('Invalid player name.', 400);
       }

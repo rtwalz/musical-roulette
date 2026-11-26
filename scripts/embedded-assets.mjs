@@ -22,7 +22,7 @@ export async function embeddedModules() {
     routes.push(`  '/${name}': [asset${index}, '${contentType}'],`);
     files.push({ name: part, type: binary ? 'Data' : 'Text', contents: await readFile(new URL(`../public/${name}`, import.meta.url)) });
   }
-  for (const name of ['worker.js', 'game.js', 'spotify.js']) {
+  for (const name of ['worker.js', 'game.js', 'spotify.js', 'request.js']) {
     files.push({ name, type: 'ESModule', contents: await readFile(new URL(`../src/${name}`, import.meta.url)) });
   }
   const entry = `
