@@ -2,6 +2,8 @@ import { accessToken, completeSignIn, signIn } from './auth.js';
 
 const ROOM_KEY = 'roulette.room';
 const SOUND_KEY = 'roulette.sound';
+const RECONNECT_DELAY = 500;
+const PONG_TIMEOUT = 2000;
 const $ = id => document.getElementById(id);
 const status = $('gameStatus');
 const sound = $('sound');
@@ -10,7 +12,8 @@ const screens = ['question', 'lobby', 'result', 'dash', 'getgamecode', 'joingame
 let membership = JSON.parse(sessionStorage.getItem(ROOM_KEY) ?? localStorage.getItem(ROOM_KEY) ?? 'null');
 let socket;
 let reconnect;
-let reconnectDelay = 500;
+let reconnectDelay = RECONNECT_DELAY;
+let pongTimer;
 let leaving = false;
 let state;
 let received;
@@ -44,6 +47,7 @@ function setMembership(value) {
 
 function reset() {
   clearTimeout(reconnect);
+  clearPongTimer();
   const old = socket;
   socket = null;
   old?.close();
@@ -65,21 +69,53 @@ function send(value) {
   return true;
 }
 
+function clearPongTimer() {
+  clearTimeout(pongTimer);
+  pongTimer = undefined;
+}
+
+function reconnectNow() {
+  reconnectDelay = RECONNECT_DELAY;
+  connect();
+}
+
+function resumeConnection() {
+  if (!membership || !socket || document.hidden) return;
+  if (socket.readyState !== WebSocket.OPEN) {
+    reconnectNow();
+    return;
+  }
+  if (pongTimer !== undefined) return;
+  const connection = socket;
+  pongTimer = setTimeout(() => {
+    if (connection === socket) reconnectNow();
+  }, PONG_TIMEOUT);
+  connection.send('ping');
+}
+
 function connect() {
+  clearTimeout(reconnect);
+  clearPongTimer();
   status.textContent = 'Connecting to your game…';
   $('abandon').classList.remove('hidden');
   const url = new URL(`/api/rooms/${membership.code}/socket`, location.href);
   url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   const connection = new WebSocket(url);
+  const old = socket;
   socket = connection;
+  old?.close();
   connection.addEventListener('open', () => {
     if (socket === connection) send({ type: 'resume', token: membership.token });
   });
   connection.addEventListener('message', event => {
     if (socket !== connection) return;
+    if (event.data === 'pong') {
+      clearPongTimer();
+      return;
+    }
     const message = JSON.parse(event.data);
     if (message.type === 'state') {
-      reconnectDelay = 500;
+      reconnectDelay = RECONNECT_DELAY;
       if (leaving) {
         send({ type: 'leave' });
         return;
@@ -92,6 +128,7 @@ function connect() {
   });
   connection.addEventListener('close', event => {
     if (socket !== connection) return;
+    clearPongTimer();
     if (event.code === 1000 && event.reason === 'Left game') {
       reset();
       return;
@@ -377,3 +414,9 @@ try {
   show('dash');
   status.textContent = error.message;
 }
+
+document.addEventListener('visibilitychange', resumeConnection);
+window.addEventListener('pageshow', event => {
+  if (event.persisted) resumeConnection();
+});
+window.addEventListener('online', resumeConnection);

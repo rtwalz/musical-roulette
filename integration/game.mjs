@@ -40,6 +40,17 @@ test('two browsers play one complete game with a reconnect and a private playlis
   async function player(token) {
     const context = await browser.newContext();
     const page = await context.newPage();
+    page.roomSockets = [];
+    await page.routeWebSocket('**/api/rooms/*/socket', socket => {
+      const server = socket.connectToServer();
+      const connection = { socket, pong: Promise.withResolvers(), blackhole: false };
+      page.roomSockets.push(connection);
+      server.onMessage(message => {
+        if (connection.blackhole) return;
+        socket.send(message);
+        if (message === 'pong') connection.pong.resolve();
+      });
+    });
     page.on('pageerror', error => errors.push(error.message));
     await page.route('https://accounts.spotify.com/**', async route => {
       const url = new URL(route.request().url());
@@ -97,9 +108,14 @@ test('two browsers play one complete game with a reconnect and a private playlis
   await guest.getByRole('textbox', { name: 'Your name' }).fill(unsafeName);
   assert.equal(await guest.getByRole('textbox', { name: 'Game code' }).inputValue(), code);
   await guest.getByRole('button', { name: 'Join game' }).click();
+  await guest.locator('#gamecodeDisplay').waitFor();
   await host.locator('#playerListContainer').getByText(unsafeName, { exact: true }).waitFor();
   assert.equal(await host.locator('#playerListContainer img').count(), 0);
   assert.equal(await guest.getByRole('button', { name: 'Start game' }).count(), 0);
+  const firstGuestSocket = guest.roomSockets[0];
+  await guest.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await firstGuestSocket.pong.promise;
+  assert.equal(guest.roomSockets.length, 1);
   await host.getByRole('button', { name: 'Leave game' }).click();
   await host.getByRole('button', { name: 'Join a game' }).click();
   const guestStart = guest.getByRole('button', { name: 'Start game' });
@@ -116,6 +132,13 @@ test('two browsers play one complete game with a reconnect and a private playlis
     host.getByRole('button', { name: unsafeName, exact: true }).click(),
     guest.getByRole('button', { name: 'Host', exact: true }).click(),
   ]);
+  firstGuestSocket.blackhole = true;
+  const resumed = guest.waitForEvent('websocket', { timeout: 5000 });
+  await guest.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+  await resumed;
+  await guest.waitForFunction(() => document.getElementById('gameStatus').textContent === '');
+  await guest.locator('.songAnswer.selected').filter({ hasText: /^Host$/ }).waitFor();
+  assert.equal(guest.roomSockets.length, 2);
   await guest.reload();
   await guest.locator('.songAnswer.selected').filter({ hasText: /^Host$/ }).waitFor();
   await host.locator('#overlay.visible').getByText('Test Song').waitFor({ timeout: 20_000 });
