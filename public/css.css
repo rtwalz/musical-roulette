@@ -312,3 +312,20 @@ margin-top: 4rem;
 margin-top: 0;
     font-weight: 400;
     font-size: 1.25rem;}
+
+body { max-width: 400px; }
+input { box-sizing: border-box; }
+button:disabled { cursor: default; opacity: .65; }
+.credit { margin: 40px 0 0; color: #333; font-weight: 600; }
+.credit a, #invite { color: inherit; }
+.legal { color: #777; font-size: .8rem; text-decoration: none; }
+.secondary { color: #333; background: #e0e6e9; }
+#countdownContainer { width: calc(100% + 4rem); }
+#overlay { min-height: 100%; height: auto; }
+#overlay.visible { opacity: 1; }
+#gameCodeNumber { margin-top: 1rem; }
+#startgameHost { position: static; width: 100%; color: #333; }
+#soundSetting:not(.hidden) { display: block; margin-top: 1rem; }
+#sound { width: auto; accent-color: #169d53; }
+.songCard { background: #f0f0ea; }
+.songAnswer.selected { color: #fff; background: #767676; opacity: 1; }
