@@ -11,6 +11,7 @@ let membership = JSON.parse(sessionStorage.getItem(ROOM_KEY) ?? localStorage.get
 let socket;
 let reconnect;
 let reconnectDelay = 500;
+let leaving = false;
 let state;
 let received;
 let frame;
@@ -46,11 +47,13 @@ function reset() {
   const old = socket;
   socket = null;
   old?.close();
+  leaving = false;
   setMembership(null);
   state = null;
   audio.pause();
   $('overlay').classList.remove('visible');
   $('abandon').classList.add('hidden');
+  $('abandon').disabled = false;
   $('soundSetting').classList.add('hidden');
   status.textContent = '';
   show('dash');
@@ -77,6 +80,10 @@ function connect() {
     const message = JSON.parse(event.data);
     if (message.type === 'state') {
       reconnectDelay = 500;
+      if (leaving) {
+        send({ type: 'leave' });
+        return;
+      }
       status.textContent = '';
       render(message);
     } else if (message.type === 'error') {
@@ -85,12 +92,16 @@ function connect() {
   });
   connection.addEventListener('close', event => {
     if (socket !== connection) return;
+    if (event.code === 1000 && event.reason === 'Left game') {
+      reset();
+      return;
+    }
     if (event.code === 1008) {
       reset();
       status.textContent = 'This game could not be rejoined or has expired.';
       return;
     }
-    status.textContent = 'Connection lost. Rejoining…';
+    status.textContent = leaving ? 'Reconnecting to leave the game…' : 'Connection lost. Rejoining…';
     reconnect = setTimeout(connect, reconnectDelay);
     reconnectDelay = Math.min(reconnectDelay * 2, 8000);
   });
@@ -213,7 +224,7 @@ function render(next) {
     show('lobby');
   } else if (next.phase === 'question') {
     if (!same) {
-      const answers = next.players.map(player => {
+      const answers = next.choices.map(player => {
         const button = node('button', player.name, 'songAnswer');
         button.value = player.id;
         button.addEventListener('click', () => {
@@ -328,7 +339,12 @@ $('create').addEventListener('click', () => show('getgamecode'));
 $('joinGame').addEventListener('submit', event => enter(event, false));
 $('createGame').addEventListener('submit', event => enter(event, true));
 $('newGame').addEventListener('click', reset);
-$('abandon').addEventListener('click', reset);
+$('abandon').addEventListener('click', () => {
+  leaving = true;
+  $('abandon').disabled = true;
+  status.textContent = 'Leaving the game…';
+  send({ type: 'leave' });
+});
 for (const back of document.querySelectorAll('.back')) back.addEventListener('click', () => show('dash'));
 
 sound.checked = localStorage.getItem(SOUND_KEY) === 'on';

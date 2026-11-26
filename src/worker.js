@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import { createRoom, joinRoom, act, advance, snapshot } from './game.js';
+import { createRoom, joinRoom, leaveRoom, act, advance, snapshot } from './game.js';
 import { loadSongs } from './spotify.js';
 import { readRoomBody } from './request.js';
 
@@ -139,6 +139,15 @@ export class Room extends DurableObject {
       } else {
         this.send(socket, snapshot(this.game, playerId, now));
       }
+      return;
+    }
+    if (message?.type === 'leave') {
+      leaveRoom(this.game, playerId);
+      const leaving = this.ctx.getWebSockets().filter(peer => peer.deserializeAttachment() === playerId);
+      for (const peer of leaving) peer.serializeAttachment(null);
+      await this.save();
+      for (const peer of leaving) peer.close(1000, 'Left game');
+      this.broadcast();
       return;
     }
     if (advance(this.game, now)) {

@@ -100,8 +100,18 @@ test('two browsers play one complete game with a reconnect and a private playlis
   await host.locator('#playerListContainer').getByText(unsafeName, { exact: true }).waitFor();
   assert.equal(await host.locator('#playerListContainer img').count(), 0);
   assert.equal(await guest.getByRole('button', { name: 'Start game' }).count(), 0);
+  await host.getByRole('button', { name: 'Leave game' }).click();
+  await host.getByRole('button', { name: 'Join a game' }).click();
+  const guestStart = guest.getByRole('button', { name: 'Start game' });
+  await guestStart.waitFor();
+  assert.equal(await guestStart.isDisabled(), true);
+  assert.deepEqual(await guest.locator('#playerListContainer .player').allTextContents(), [unsafeName]);
+  await host.getByRole('textbox', { name: 'Your name' }).fill('Host');
+  await host.getByRole('textbox', { name: 'Game code' }).fill(code);
+  await host.getByRole('button', { name: 'Join game' }).click();
+  await host.locator('#gamecodeDisplay').waitFor();
   await screenshot(host, 'roulette-lobby.png');
-  await host.getByRole('button', { name: 'Start game' }).click();
+  await guestStart.click();
   await Promise.all([
     host.getByRole('button', { name: unsafeName, exact: true }).click(),
     guest.getByRole('button', { name: 'Host', exact: true }).click(),

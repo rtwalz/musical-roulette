@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GUESS_MS, RESULTS_MS, createRoom, joinRoom, act, advance, snapshot } from '../src/game.js';
+import { GUESS_MS, RESULTS_MS, createRoom, joinRoom, leaveRoom, act, advance, snapshot } from '../src/game.js';
 
 const sample = { uri: 'spotify:track:0', title: 'Track', artist: 'Artist', preview: 'https://example.com/clip', index: 4 };
 const player = (id, songs) => ({ id, name: id, token: `private-${id}`, songs, score: 0 });
@@ -12,6 +12,35 @@ test('only the host can start and a playable pool is required', () => {
   assert.match(act(room, 'guest', { type: 'start' }, 0), /Only the host/);
   assert.match(act(room, 'host', { type: 'start' }, 0), /No playable songs/);
   assert.equal(room.phase, 'lobby');
+});
+
+test('leaving removes lobby members and transfers host in join order', () => {
+  const room = createRoom('123456', player('host', [sample]), 0);
+  joinRoom(room, player('guest', []));
+  joinRoom(room, player('third', []));
+  leaveRoom(room, 'host');
+  assert.equal(snapshot(room, 'guest', 0).host, true);
+  assert.deepEqual(room.players.map(({ id }) => id), ['guest', 'third']);
+  assert.match(act(room, 'host', { type: 'start' }, 0), /not in this game/);
+  leaveRoom(room, 'guest');
+  leaveRoom(room, 'third');
+  assert.equal(room.host, null);
+  assert.equal(room.phase, 'lobby');
+  joinRoom(room, player('new', []));
+  assert.equal(room.host, 'new');
+});
+
+test('a track is still guessable after its owner leaves an ongoing round', () => {
+  const room = createRoom('123456', player('host', [sample]), 0);
+  joinRoom(room, player('guest', []));
+  act(room, 'host', { type: 'start' }, 0);
+  leaveRoom(room, 'host');
+  const question = snapshot(room, 'guest', 1);
+  assert.deepEqual(question.players.map(({ id }) => id), ['guest']);
+  assert.deepEqual(question.choices.map(({ id }) => id), ['host', 'guest']);
+  assert.equal(act(room, 'guest', { type: 'answer', round: 1, pick: 'host' }, 1), undefined);
+  advance(room, GUESS_MS);
+  assert.equal(snapshot(room, 'guest', GUESS_MS).scores[0].pick, 'host');
 });
 
 test('questions are redacted, server scores once, and snapshots restore each phase', () => {

@@ -15,6 +15,19 @@ export function joinRoom(room, player) {
   if (room.phase !== 'lobby') return 'This game has already started.';
   if (room.players.length >= MAX_PLAYERS) return 'This game is full.';
   room.players.push(player);
+  room.host ??= player.id;
+}
+
+function playerChoices(players) {
+  return players.map(({ id, name }) => ({ id, name }));
+}
+
+export function leaveRoom(room, playerId) {
+  const index = room.players.findIndex(player => player.id === playerId);
+  if (index === -1) return;
+  if (room.phase === 'question' || room.phase === 'result') room.choices ??= playerChoices(room.players);
+  room.players.splice(index, 1);
+  if (room.host === playerId) room.host = room.players[0]?.id ?? null;
 }
 
 function start(room, now, random) {
@@ -61,7 +74,7 @@ export function act(room, playerId, message, now, random = Math.random) {
   if (message?.type === 'answer') {
     if (room.phase !== 'question' || now >= room.deadline || message.round !== room.round + 1) return 'This round is no longer accepting guesses.';
     if (room.answers[player.id]) return 'You already guessed.';
-    if (!room.players.some(player => player.id === message.pick)) return 'Choose a player in this game.';
+    if (!(room.choices ?? room.players).some(player => player.id === message.pick)) return 'Choose a player in this game.';
     room.answers[player.id] = message.pick;
     if (message.pick === room.songs[room.round].owner) {
       player.score += Math.round(500 + Math.min(GUESS_MS, room.deadline - now) * 0.0357);
@@ -98,13 +111,16 @@ export function snapshot(room, playerId, now) {
   const state = {
     type: 'state', code, phase, deadline, now,
     host: room.host === playerId,
-    players: players.map(({ id, name }) => ({ id, name })),
+    players: playerChoices(players),
     round: room.round + 1, total: room.songs.length,
   };
   if (phase === 'lobby') return state;
   const song = room.songs[room.round];
   if (phase === 'question') {
-    return { ...state, preview: song.preview, audioEnds: deadline + RESULTS_MS, pick: room.answers[playerId] ?? null };
+    return {
+      ...state, choices: room.choices ?? state.players, preview: song.preview,
+      audioEnds: deadline + RESULTS_MS, pick: room.answers[playerId] ?? null,
+    };
   }
   if (phase === 'result') {
     return {
@@ -112,7 +128,7 @@ export function snapshot(room, playerId, now) {
       preview: song.preview, audioEnds: deadline,
       others: song.others, revealUntil: deadline - RESULTS_MS + REVEAL_MS,
       scores: players.map(({ id, name, score }) => ({
-        name, score, pick: players.find(player => player.id === room.answers[id])?.name,
+        name, score, pick: (room.choices ?? players).find(player => player.id === room.answers[id])?.name,
         correct: song.owner === room.answers[id],
       })).sort((a, b) => b.score - a.score),
     };
