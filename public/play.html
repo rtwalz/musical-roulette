@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Musical Roulette</title>
+  <link rel="stylesheet" href="/css.css">
+  <script type="module" src="/play.js"></script>
+</head>
+<body>
+  <main>
+    <section id="question" class="hidden">
+      <div id="countdownContainer"><div id="countdown"></div></div>
+      <h1><span class="offcolor">musical</span> roulette</h1>
+      <p>Guess whose song this is!</p>
+      <div id="questionBank"></div>
+    </section>
+    <section id="lobby" class="hidden">
+      <h1><span class="offcolor">musical</span> roulette</h1>
+      <h1 id="gamecodeDisplay"></h1>
+      <p id="gamecodeDesc">Tell your friends to join at <a id="invite"></a>!</p>
+      <div id="playerListContainer"></div>
+      <button id="startgameHost" class="hidden" type="button">Start game</button>
+    </section>
+    <section id="result" class="hidden">
+      <div id="countdownresult"></div>
+      <h1>round <span id="currentRound"></span> <span id="totalRounds" class="offcolor"></span></h1>
+      <div id="songcard"></div>
+      <div id="resultList"></div>
+    </section>
+    <section id="dash" class="hidden">
+      <h1><span class="offcolor">musical</span> roulette</h1>
+      <p>The game where a song plays and you guess whose song it is. Everyone enters a game code and plays on their own device.</p>
+      <button id="join" type="button">Join a game</button>
+      <button id="create" type="button">Create a game</button>
+    </section>
+    <section id="getgamecode" class="hidden">
+      <h1><span class="offcolor">musical</span> roulette</h1>
+      <form id="createGame">
+        <input name="name" type="text" placeholder="Your name" aria-label="Your name" maxlength="40" required>
+        <button type="submit">Get game code</button>
+      </form>
+      <button class="secondary back" type="button">Back</button>
+    </section>
+    <section id="joingame" class="hidden">
+      <h1><span class="offcolor">musical</span> roulette</h1>
+      <p>Enter your game code below!</p>
+      <form id="joinGame">
+        <input name="name" type="text" placeholder="Your name" aria-label="Your name" maxlength="40" required>
+        <input id="gameCodeNumber" name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="Game code" aria-label="Game code" required>
+        <button type="submit">Join game</button>
+      </form>
+      <button class="secondary back" type="button">Back</button>
+    </section>
+    <div id="overlay" aria-hidden="true">
+      <h1 id="whose"></h1>
+      <h2 id="what"></h2>
+      <h4 id="by"></h4>
+    </div>
+    <section id="alldone" class="hidden">
+      <h1>game <span class="offcolor">over</span></h1>
+      <div id="finalScores"></div>
+      <button id="newGame" type="button">New game</button>
+      <button id="playlistButton" type="button">Create Spotify playlist</button>
+      <p id="playlistStatus" role="status"></p>
+      <h2>Songs played</h2>
+      <div id="doneSongs"></div>
+    </section>
+    <p id="gameStatus" role="status"></p>
+    <button id="abandon" type="button" class="secondary hidden">Leave game</button>
+    <label id="soundSetting" class="hidden">
+      <input id="sound" type="checkbox"> Play sound on this device
+    </label>
+  </main>
+</body>
+</html>

@@ -1,395 +1,379 @@
-let token = null
-if (!location.hash) {
-	location.href = "/"
-} else {
-	token = location.hash.split("#")[1].split("=")[1].split("&")[0]
-}
-if (!token) {
-	location.href = "/"
-}
+import { accessToken, completeSignIn, signIn } from './auth.js';
 
-var ID = function () {
-  return '_' + Math.random().toString(36).substr(2, 9);
-};
+const ROOM_KEY = 'roulette.room';
+const SOUND_KEY = 'roulette.sound';
+const $ = id => document.getElementById(id);
+const status = $('gameStatus');
+const sound = $('sound');
+const audio = new Audio();
+const screens = ['question', 'lobby', 'result', 'dash', 'getgamecode', 'joingame', 'alldone'];
+let membership = JSON.parse(sessionStorage.getItem(ROOM_KEY) ?? localStorage.getItem(ROOM_KEY) ?? 'null');
+let socket;
+let reconnect;
+let reconnectDelay = 500;
+let leaving = false;
+let state;
+let received;
+let frame;
+let audioRound;
+let previewStarted;
+let playlist;
 
-let uniqueId = localStorage.getItem("uuid")
-if (!uniqueId) {
-	uniqueId = ID()
-	localStorage.setItem("uuid", uniqueId)
-}
-
-var socket = io();
-
-let playerCount = 0
-let gameCode = null
-let isHostG = false
-let questionStartTime = null
-
-if (localStorage.getItem("currentGame") && confirm("Do you want to rejoin the game #" + localStorage.getItem("currentGame"))){
-
-	socket.emit("confirmation", {
-	  	uuid: uniqueId,
-	  	code: localStorage.getItem("currentGame"),
-	  })
-
-	if (localStorage.getItem("isHost")) isHostG = true
-
-
+function node(tag, text, className) {
+  const element = document.createElement(tag);
+  element.textContent = text ?? '';
+  if (className) element.className = className;
+  return element;
 }
 
-socket.on("connect", () => {
-  socket.emit("confirmation", {
-  	uuid: uniqueId,
-  	code: localStorage.getItem("currentGame")
-  })
+function show(screen) {
+  for (const id of screens) $(id).classList.toggle('hidden', id !== screen);
+}
+
+function setMembership(value) {
+  membership = value;
+  if (value) {
+    const data = JSON.stringify(value);
+    sessionStorage.setItem(ROOM_KEY, data);
+    localStorage.setItem(ROOM_KEY, data);
+  } else {
+    if (sessionStorage.getItem(ROOM_KEY) === localStorage.getItem(ROOM_KEY)) localStorage.removeItem(ROOM_KEY);
+    sessionStorage.removeItem(ROOM_KEY);
+  }
+}
+
+function reset() {
+  clearTimeout(reconnect);
+  const old = socket;
+  socket = null;
+  old?.close();
+  leaving = false;
+  setMembership(null);
+  state = null;
+  audio.pause();
+  $('overlay').classList.remove('visible');
+  $('abandon').classList.add('hidden');
+  $('abandon').disabled = false;
+  $('soundSetting').classList.add('hidden');
+  status.textContent = '';
+  show('dash');
+}
+
+function send(value) {
+  if (socket?.readyState !== WebSocket.OPEN) return false;
+  socket.send(JSON.stringify(value));
+  return true;
+}
+
+function connect() {
+  status.textContent = 'Connecting to your game…';
+  $('abandon').classList.remove('hidden');
+  const url = new URL(`/api/rooms/${membership.code}/socket`, location.href);
+  url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const connection = new WebSocket(url);
+  socket = connection;
+  connection.addEventListener('open', () => {
+    if (socket === connection) send({ type: 'resume', token: membership.token });
+  });
+  connection.addEventListener('message', event => {
+    if (socket !== connection) return;
+    const message = JSON.parse(event.data);
+    if (message.type === 'state') {
+      reconnectDelay = 500;
+      if (leaving) {
+        send({ type: 'leave' });
+        return;
+      }
+      status.textContent = '';
+      render(message);
+    } else if (message.type === 'error') {
+      status.textContent = message.error;
+    }
+  });
+  connection.addEventListener('close', event => {
+    if (socket !== connection) return;
+    if (event.code === 1000 && event.reason === 'Left game') {
+      reset();
+      return;
+    }
+    if (event.code === 1008) {
+      reset();
+      status.textContent = 'This game could not be rejoined or has expired.';
+      return;
+    }
+    status.textContent = leaving ? 'Reconnecting to leave the game…' : 'Connection lost. Rejoining…';
+    reconnect = setTimeout(connect, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 2, 8000);
+  });
+}
+
+function guessedButtons(pick) {
+  for (const button of $('questionBank').children) {
+    button.classList.toggle('selected', pick === button.value);
+    button.disabled = Boolean(pick);
+  }
+}
+
+function scoreCards(scores, showPicks) {
+  return scores.map(player => {
+    const item = node('div', '', 'result');
+    item.append(node('p', player.name, 'playerName'));
+    if (showPicks) {
+      const guess = player.pick ? `${player.correct ? '✔️' : '❌'} ${player.pick}` : 'Too slow';
+      item.append(node('p', guess, 'playerAction'));
+    }
+    item.append(node('p', player.score, 'playerScore'));
+    return item;
+  });
+}
+
+function songCard(song) {
+  const card = node('div', '', 'songCard');
+  const text = node('div', '', 'text');
+  if (song.art) {
+    const img = node('img', '', 'album');
+    img.alt = '';
+    img.src = song.art;
+    card.append(img);
+  }
+  text.append(node('p', song.title, 'title'), node('p', song.artist, 'artist'));
+  card.append(text);
+  return card;
+}
+
+function colorReveal(song, card, round) {
+  const overlay = $('overlay');
+  overlay.style.backgroundColor = '';
+  overlay.style.color = '';
+  $('countdownresult').style.backgroundColor = '';
+  if (!song.art) return;
+  const image = new Image();
+  image.crossOrigin = 'anonymous';
+  image.onload = () => {
+    if (state?.phase !== 'result' || state.round !== round || !card.isConnected) return;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 1;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0, 1, 1);
+      const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+      const background = `rgb(${r}, ${g}, ${b})`;
+      const foreground = r * .299 + g * .587 + b * .114 < 145 ? '#fff' : '#333';
+      overlay.style.backgroundColor = card.style.backgroundColor = $('countdownresult').style.backgroundColor = background;
+      overlay.style.color = card.style.color = foreground;
+    } catch {
+      // The reveal still works without album colors.
+    }
+  };
+  image.src = song.art;
+}
+
+function now() {
+  return state.now + (performance.now() - received);
+}
+
+function playPreview() {
+  if (!sound.checked || !state?.preview || state.audioEnds <= now()) return;
+  if (state.round === audioRound && previewStarted) return;
+  audioRound = state.round;
+  previewStarted = true;
+  audio.src = state.preview;
+  audio.currentTime = Math.max(0, (now() - (state.audioEnds - 29_000)) / 1000);
+  audio.volume = Math.max(0, Math.min(1, (state.audioEnds - now()) / 2000));
+  audio.play().catch(error => {
+    previewStarted = false;
+    if (error.name !== 'AbortError' && sound.checked) status.textContent = 'Audio could not play. Toggle sound to try again.';
+  });
+}
+
+function updateClock() {
+  if (!state?.deadline) return;
+  const time = now();
+  const remaining = state.deadline - time;
+  const bar = state.phase === 'question' ? $('countdown') : $('countdownresult');
+  bar.style.width = `${Math.max(0, Math.min(100, remaining / (state.phase === 'question' ? 150 : 140)))}%`;
+  if (state.phase === 'result' && time >= state.revealUntil && $('result').classList.contains('hidden')) {
+    show('result');
+    $('overlay').classList.remove('visible');
+  }
+  if (!audio.paused) {
+    audio.volume = Math.max(0, Math.min(1, (state.audioEnds - time) / 2000));
+    if (time >= state.audioEnds) audio.pause();
+  }
+  if (remaining > 0 || !audio.paused) frame = requestAnimationFrame(updateClock);
+}
+
+function render(next) {
+  const same = next.phase === state?.phase && next.round === state.round;
+  if (next.round !== state?.round) {
+    audio.pause();
+    previewStarted = false;
+  }
+  state = next;
+  received = performance.now();
+  $('soundSetting').classList.toggle('hidden', next.phase === 'finished');
+  $('abandon').classList.toggle('hidden', next.phase === 'finished');
+
+  if (next.phase === 'lobby') {
+    $('gamecodeDisplay').textContent = next.code;
+    $('invite').href = `/?room=${next.code}`;
+    $('invite').textContent = location.host;
+    $('startgameHost').classList.toggle('hidden', !next.host);
+    $('startgameHost').disabled = next.players.length < 2;
+    $('playerListContainer').replaceChildren(...next.players.map(player => node('div', player.name, 'player')));
+    show('lobby');
+  } else if (next.phase === 'question') {
+    if (!same) {
+      const answers = next.choices.map(player => {
+        const button = node('button', player.name, 'songAnswer');
+        button.value = player.id;
+        button.addEventListener('click', () => {
+          if (send({ type: 'answer', round: next.round, pick: player.id })) guessedButtons(player.id);
+        });
+        return button;
+      });
+      $('questionBank').replaceChildren(...answers);
+    }
+    guessedButtons(next.pick);
+    $('overlay').classList.remove('visible');
+    show('question');
+  } else if (next.phase === 'result' && !same) {
+    $('currentRound').textContent = next.round;
+    $('totalRounds').textContent = `of ${next.total}`;
+    const card = songCard(next.song);
+    $('songcard').replaceChildren(card);
+    $('resultList').replaceChildren(...scoreCards(next.scores, true));
+    $('whose').replaceChildren(document.createTextNode(`${next.owner}’s #${next.rank}`));
+    for (const { name, rank } of next.others) {
+      $('whose').append(node('br'), node('span', `Also ${name}’s #${rank}`, 'also'));
+    }
+    $('what').textContent = next.song.title;
+    $('by').textContent = next.song.artist;
+    colorReveal(next.song, card, next.round);
+    if (now() < next.revealUntil) {
+      show(null);
+      $('overlay').classList.add('visible');
+    } else {
+      show('result');
+    }
+  } else if (next.phase === 'finished' && !same) {
+    audio.pause();
+    $('overlay').classList.remove('visible');
+    show('alldone');
+    $('finalScores').replaceChildren(...scoreCards(next.scores, false));
+    $('doneSongs').replaceChildren(...next.songs.map(songCard));
+    $('playlistStatus').replaceChildren();
+    $('playlistButton').disabled = false;
+    playlist = null;
+  }
+  if (!same) playPreview();
+  cancelAnimationFrame(frame);
+  updateClock();
+}
+
+async function enter(event, creating) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = new FormData(form);
+  const code = creating ? '' : data.get('code');
+  const button = form.querySelector('button[type=submit]');
+  button.disabled = true;
+  status.textContent = 'Finding playable songs from your Spotify top tracks…';
+  try {
+    const token = await accessToken();
+    if (!token) return await signIn(code);
+    const response = await fetch(`/api/rooms${code ? `/${code}` : ''}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: data.get('name') }),
+    });
+    const result = await response.json();
+    if (response.status === 401) return await signIn(code);
+    if (!response.ok) throw new Error(result.error);
+    setMembership(result);
+    connect();
+  } catch (error) {
+    status.textContent = error.message || 'Could not join the game. Try again.';
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function spotifyPlaylistRequest(token, path, payload) {
+  const response = await fetch(`https://api.spotify.com/v1/${path}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (response.status === 401) throw new Error('Spotify sign-in expired. Sign in again and rejoin the finished game.');
+  if (!response.ok) throw new Error('Spotify could not save the playlist. Try again.');
+  return response.json();
+}
+
+$('playlistButton').addEventListener('click', async () => {
+  const button = $('playlistButton');
+  const game = state;
+  button.disabled = true;
+  try {
+    const token = await accessToken();
+    if (!token) return await signIn(game.code);
+    playlist ??= await spotifyPlaylistRequest(token, 'me/playlists', {
+      name: `Musical Roulette #${game.code}`, public: false, description: 'Songs from your Musical Roulette game.',
+    });
+    await spotifyPlaylistRequest(token, `playlists/${playlist.id}/items`, { uris: game.songs.map(song => song.uri) });
+    if (state !== game && state?.code !== game.code) return;
+    const link = node('a', 'Open your playlist on Spotify');
+    link.href = `https://open.spotify.com/playlist/${playlist.id}`;
+    $('playlistStatus').replaceChildren(link);
+  } catch (error) {
+    if (state?.code === game.code) {
+      $('playlistStatus').textContent = error.message;
+      button.disabled = false;
+    }
+  }
 });
 
-socket.on('playerlist', function(msg) {
-	byId("playerListContainer").innerHTML = ""
-	playerCount = msg.length
-    msg.forEach(function(player){
-    	var item = document.createElement('div');
-	    item.textContent = player;
-	    item.classList.add("player")
-	    
-	    byId("playerListContainer").appendChild(item);
-    })
-    hideEverything()
-    byId("lobby").classList.remove("hidden")
-  });
+$('startgameHost').addEventListener('click', () => send({ type: 'start' }));
+$('join').addEventListener('click', () => show('joingame'));
+$('create').addEventListener('click', () => show('getgamecode'));
+$('joinGame').addEventListener('submit', event => enter(event, false));
+$('createGame').addEventListener('submit', event => enter(event, true));
+$('newGame').addEventListener('click', reset);
+$('abandon').addEventListener('click', () => {
+  leaving = true;
+  $('abandon').disabled = true;
+  status.textContent = 'Leaving the game…';
+  send({ type: 'leave' });
+});
+for (const back of document.querySelectorAll('.back')) back.addEventListener('click', () => show('dash'));
 
-socket.on("error", function(msg){
-	alert(msg)
-	location.reload()
-})
-
-socket.on("result", function(msg){
-	resultStartTime = new Date().getTime()
-	function animationFrame(){
-		let msPassed = new Date().getTime() - resultStartTime
-		let percentageCalc = 1-(msPassed/14000)
-		byId("countdownresult").style.width = percentageCalc*100 + "%"
-		if (percentageCalc <= 1 ) {
-			window.requestAnimationFrame(animationFrame);
-		}
-	}
-	window.requestAnimationFrame(animationFrame);
-	byId("currentRound").innerHTML = msg.round
-	byId("totalRounds").innerHTML = " of " + msg.totalRounds
-
-	byId("resultList").innerHTML = ""
-
-	const colorThief = new ColorThief();
-    const img = byId("songalbum")
-    img.crossOrigin = "Anonymous";
-
-
-    // Make sure image is finished loading
-    if (img.complete) {
-      let abc = colorThief.getColor(img);
-      byId("songcard").style.backgroundColor = "rgb(" + abc.join(",") + ")"
-      	      byId("countdownresult").style.backgroundColor = "rgb(" + abc.join(",") + ")"
-      	      byId("overlay").style.backgroundColor = "rgb(" + abc.join(",") + ")"
-
-      	      if ((abc[0]*0.299 + abc[1]*0.587 + abc[2]*0.114) < 186)
-      	      {
-      	      	byId("songtitle").style.color = "#fff"
-      	      	byId("whose").style.color = "#fff"
-      	      	byId("what").style.color = "#fff"
-      	      	byId("by").style.color = "#fff"
-      	      	byId("songartist").style.color = "#fff"
-
-      	      }  else {
-      	      	byId("songtitle").style.color = "#333"
-      	      	byId("whose").style.color = "#333"
-      	      	byId("what").style.color = "#333"
-      	      	byId("by").style.color = "#333"
-      	      	byId("songartist").style.color = "#333"
-      	      }
-
-
-    } else {
-      img.addEventListener('load', function() {
-        let abc = colorThief.getColor(img);
-      byId("songcard").style.backgroundColor = "rgb(" + abc.join(",") + ")"
-
-	       byId("countdownresult").style.backgroundColor = "rgb(" + abc.join(",") + ")"
-      	      byId("overlay").style.backgroundColor = "rgb(" + abc.join(",") + ")"
-
-      	      if ((abc[0]*0.299 + abc[1]*0.587 + abc[2]*0.114) < 186)
-      	      {
-      	      	byId("songtitle").style.color = "#fff"
-      	      	byId("whose").style.color = "#fff"
-      	      	byId("what").style.color = "#fff"
-      	      	byId("by").style.color = "#fff"
-      	      	byId("songartist").style.color = "#fff"
-
-      	      }  else {
-      	      	byId("songtitle").style.color = "#333"
-      	      	byId("whose").style.color = "#333"
-      	      	byId("what").style.color = "#333"
-      	      	byId("by").style.color = "#333"
-      	      	byId("songartist").style.color = "#333"
-      	      }
-
-      });
+sound.checked = localStorage.getItem(SOUND_KEY) === 'on';
+sound.addEventListener('change', () => {
+  localStorage.setItem(SOUND_KEY, sound.checked ? 'on' : 'off');
+  if (sound.checked) {
+    if (state?.preview) playPreview();
+    else {
+      audio.src = 'data:audio/wav;base64,UklGRiUAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQEAAACA';
+      audio.play().catch(() => {});
     }
+  } else {
+    audio.pause();
+    previewStarted = false;
+  }
+});
 
-    msg.scores.forEach(function(player){
-    	var item = document.createElement('div');
-    	item.classList.add('result')
-
-    	byId("songtitle").innerHTML = msg.question.name
-    	byId("songartist").innerHTML = msg.question.artist
-
-    	byId("what").innerHTML = msg.question.name
-    	byId("whose").innerHTML = `${msg.question.ownerName}'s #${msg.question.index+1}`
-    	if (msg.question.otherIndexes){
-    		msg.question.otherIndexes.forEach(function(otherIndex){
-	    	byId("whose").innerHTML += `<br><span class="also">Also ${otherIndex[1]}'s #${otherIndex[0]+1}</span>`
-
-    		})
-
-    	}
-
-    	byId("by").innerHTML = msg.question.artist
-
-    	byId("songalbum").setAttribute("src", msg.question.art)
-
-    	
-
-
-
-    	var name1 = document.createElement('p');
-    	var name2 = document.createElement('p');
-    	var name3 = document.createElement('p');
-
-    	name1.innerHTML = player.name
-    	name2.innerHTML = "❌"
-    	if (player.correct) name2.innerHTML = "✔️"
-    	name2.innerHTML += " " + player.pick
-    	name3.innerHTML = player.score.toFixed(0)
-
-    	name1.classList.add("playerName")
-    	name2.classList.add("playerAction")
-    	name3.classList.add("playerScore")
-
-
-    	item.appendChild(name1)
-    	item.appendChild(name2)
-    	item.appendChild(name3)
-
-
-
-
-	    
-	    
-	    byId("resultList").appendChild(item);
-    })
-    hideEverything()
-    byId("overlay").style.opacity = 1
-    setTimeout(function(){
-	    byId("result").classList.remove("hidden")
-    byId("overlay").style.opacity = 0
-    byId("doneSongs").innerHTML = byId("doneSongs").innerHTML + byId("songcard").outerHTML
-
-
-
-    }, 5000)
-})
-
-socket.on('finish', function(msg){
-	hideEverything()
-	byId("alldone").classList.remove("hidden")
-	localStorage.setItem("currentGame", gamecode)
-	localStorage.setItem("isHost", null)
-
-	localStorage.setItem("playlist", JSON.stringify({
-		
-	}))
-
-	byId("playlistButton").setAttribute("href", byId("playlistButton").getAttribute("href")+encodeURIComponent(JSON.stringify({players:[], })))	
-
-	byId("songcard").style.display = "none!important"
-	byId("result").classList.remove("hidden")
-	var divsToHide = document.getElementsByClassName("playerAction"); //divsToHide is an array
-    for(var i = 0; i < divsToHide.length; i++){
-        divsToHide[i].style.visibility = "hidden"; // or
-        divsToHide[i].style.display = "none"; // depending on what you're doing
-    }
-})
-
-socket.on('question', function(msg) {
-
-
-
-	questionStartTime = new Date().getTime()
-	function animationFrame(){
-		let msPassed = new Date().getTime() - questionStartTime
-		let percentageCalc = 1-(msPassed/msg.ms)
-		byId("countdown").style.width = percentageCalc*100 + "%"
-		if (percentageCalc <= 1 ) {
-			window.requestAnimationFrame(animationFrame);
-		}
-	}
-	window.requestAnimationFrame(animationFrame);
-	if (isHostG) {
-		let blankAudio = new Audio(msg.mp3)
-		blankAudio.play()
-		setTimeout(function(){
-			var fadeAudio = setInterval(function () {
-				if (blankAudio.volume <= 0.001) {
-		            clearInterval(fadeAudio);
-
-		        }
-	        
-	            blankAudio.volume -= 0.1;
-		       
-		        
-		    }, 200);
-		}, 27000)
-	}
-	byId("questionBank").innerHTML = ""
-	playerCount = msg.players.length
-	let ifPickedAnswerAlready = false
-    msg.players.forEach(function(player){
-    	var item = document.createElement('button');
-	    item.textContent = player.name;
-	    item.classList.add("songAnswer")
-	    item.setAttribute("_player", player.internalId)
-
-	    item.onclick = function(){
-	    	if (!ifPickedAnswerAlready){
-	    		ifPickedAnswerAlready = true
-	    		console.log("picked", player.internalId, msg.owner, msg)
-	    		item.style.backgroundColor = "#a6a6a6"
-	    		item.style.color = "#fff"
-
-	    		setTimeout(function(){
-	    			item.style.backgroundColor = "#ef3a5d"
-
-		    		document.querySelector(`[_player="${msg.owner}"]`).style.backgroundColor = "#169d53"
-		    		document.querySelector(`[_player="${msg.owner}"]`).style.color = "#fff"
-	    		}, 150)
-
-	    		socket.emit('answer', {
-					gamecode: msg.gameId,
-					pick: player.internalId,
-					id: uniqueId,
-					correct: player.internalId == msg.owner,
-					ms: new Date().getTime() - questionStartTime
-				});
-	    	}
-	    }
-	    
-	    byId("questionBank").appendChild(item);
-    })
-    hideEverything()
-    byId("question").classList.remove("hidden")
-  });
-
-function hideEverything(){
-	byId("dash").classList.add("hidden")
-	byId("result").classList.add("hidden")
-	byId("lobby").classList.add("hidden")
-	byId("question").classList.add("hidden")
-	byId("joingame").classList.add("hidden")
-	byId("getgamecode").classList.add("hidden")
-}
-
-
-let byId = function(si){
-	return document.getElementById(si)
-}
-byId("join").addEventListener('click', function() { 
-	byId("dash").classList.add("hidden")
-	byId("joingame").classList.remove("hidden")
-}, false);
-
-byId("create").addEventListener('click', function() { 
-	byId("dash").classList.add("hidden")
-	byId("getgamecode").classList.remove("hidden")
-}, false);
-
-function joinGame(gamecode, name, isHost){
-	isHostG = isHost
-	getSongs(token, function(songs){
-		socket.emit('initial', {
-			name: name,
-			songs: songs,
-			gamecode: gamecode,
-			id: uniqueId
-		});
-		localStorage.setItem("currentGame", gamecode)
-		localStorage.setItem("isHost", isHost)
-
-		byId("gamecodeDisplay").innerHTML = gamecode
-		if (isHost) byId("startgameHost").classList.remove("hidden")
-		gameCode = gamecode
-	})
-}
-
-byId("startgameHost").addEventListener('click', function() { 
-	if (playerCount < 2) return alert("You need at least 2 people to start the game!")
-		socket.emit('start', gameCode);
-}, false);
-
-byId("gamecode").addEventListener('click', function() { 
-	let name = byId("createName").value
-	if (!name) return alert("Enter your name!!!!")
-	fetch('/newgame')
-	  .then(response => response.json())
-	  .then(data => joinGame(data.code, name, true));
-}, false);
-
-byId("joingamebutton").addEventListener('click', function() { 
-	let name = byId("gameCodeName").value
-	let codeNum = byId("gameCodeNumber").value
-	if (!name) return alert("Enter your name!!!!")
-	if (!codeNum) return alert("Enter the game code!!!!")
-	joinGame(codeNum, name)
-}, false);
-
-// getSongs(token, function(songList){
-
-
-// })
-
-// get top 50 songs into standard array [ {name, artist, art, mp3, id} ]
-function getSongs(token, cb){
-	var request = new XMLHttpRequest()
-	request.open("GET", "https://api.spotify.com/v1/me/top/tracks?time_range=long_term&limit=50", true)
-	request.setRequestHeader("Authorization", "Bearer " + token);
-	request.onload = function() {
-		if (this.status >= 200 && this.status < 400) {
-			var data = JSON.parse(this.response);
-			if (data) {
-				let songReturner = []
-				data.items.forEach(function(song, index) {
-					if (song.preview_url && song.artists && song.artists[0] && song.artists[0].name && song.album && song.album.images && song.album.images[1] && song.id !== "4wpWZDW50CVGxQUgMmwmG"){
-						songReturner.push({
-							name: song.name,
-							artist: song.artists[0].name,
-							art: song.album.images[1].url,
-							mp3: song.preview_url,
-							id: song.id,
-							index
-						})
-					}
-					
-				})
-				cb(songReturner)
-			} else {
-				alert("sorry, we couldn't get your data!")
-				location.href="/"
-			}
-		} else {
-			alert("Could not get Spotify data")
-			location.href="/"
-		}
-	};
-	request.onerror = function() {
-		alert("Could not get Spotify data");
-	};
-	request.send();
+try {
+  const invited = await completeSignIn() || new URLSearchParams(location.search).get('room');
+  if (invited && /^\d{6}$/.test(invited)) $('gameCodeNumber').value = invited;
+  if (membership && (!invited || invited === membership.code)) {
+    setMembership(membership);
+    connect();
+  } else if (await accessToken()) {
+    show(invited ? 'joingame' : 'dash');
+  } else {
+    location.replace(invited ? `/?room=${encodeURIComponent(invited)}` : '/');
+  }
+} catch (error) {
+  show('dash');
+  status.textContent = error.message;
 }

@@ -2,17 +2,18 @@
   "name": "songroulette",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "test": "node --test",
+    "start": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test:game": "node --test integration/game.mjs"
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "express": "^4.17.1",
-    "pug": "^3.0.2",
-    "shortid": "^2.2.16",
-    "socket.io": "^4.2.0"
+  "devDependencies": {
+    "miniflare": "5.20261123.1-beta",
+    "playwright-core": "^1.65.1",
+    "wrangler": "^4.168.0"
   }
 }
